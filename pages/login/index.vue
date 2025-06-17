@@ -62,7 +62,7 @@ const login = (e: Event) => {
   if (username.value === 'Admin' && password.value === '123456') {
     token.value = dummyToken;
     console.log('Logging in successful');
-    router.push('/dashboard'); // Instead of '/'
+    router.push('/');
   } else {
     console.log('Invalid credentials');
     errorMessage.value = 'Invalid username or password. Please try again.';
