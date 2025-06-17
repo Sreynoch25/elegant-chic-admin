@@ -24,7 +24,7 @@
         </a-menu-item>
 
         <!-- Users submenu -->
-        <a-sub-menu key="users">
+        <!-- <a-sub-menu key="users">
           <template #icon><user-outlined /></template>
           <template #title>Users</template>
           <a-menu-item key="users-list">
@@ -33,10 +33,10 @@
           <a-menu-item key="users-add">
             <NuxtLink to="/users/add">Add New User</NuxtLink>
           </a-menu-item>
-        </a-sub-menu>
+        </a-sub-menu> -->
 
         <!-- Products submenu -->
-        <a-sub-menu key="products">
+        <!-- <a-sub-menu key="products">
           <template #icon><shopping-outlined /></template>
           <template #title>Products</template>
           <a-menu-item key="products-list">
@@ -48,10 +48,10 @@
           <a-menu-item key="products-categories">
             <NuxtLink to="/products/categories">Categories</NuxtLink>
           </a-menu-item>
-        </a-sub-menu>
+        </a-sub-menu> -->
 
         <!-- Orders submenu -->
-        <a-sub-menu key="orders">
+        <!-- <a-sub-menu key="orders">
           <template #icon><shopping-cart-outlined /></template>
           <template #title>Orders</template>
           <a-menu-item key="orders-list">
@@ -63,10 +63,10 @@
           <a-menu-item key="orders-complete">
             <NuxtLink to="/orders/complete">Complete Orders</NuxtLink>
           </a-menu-item>
-        </a-sub-menu>
+        </a-sub-menu> -->
 
         <!-- Reports submenu -->
-        <a-sub-menu key="reports">
+        <!-- <a-sub-menu key="reports">
           <template #icon><bar-chart-outlined /></template>
           <template #title>Reports</template>
           <a-menu-item key="reports-sales">
@@ -75,10 +75,10 @@
           <a-menu-item key="reports-inventory">
             <NuxtLink to="/reports/inventory">Inventory Report</NuxtLink>
           </a-menu-item>
-        </a-sub-menu>
+        </a-sub-menu> -->
 
         <!-- Settings submenu -->
-        <a-sub-menu key="settings">
+        <!-- <a-sub-menu key="settings">
           <template #icon><setting-outlined /></template>
           <template #title>Settings</template>
           <a-menu-item key="settings-general">
@@ -90,7 +90,7 @@
           <a-menu-item key="settings-security">
             <NuxtLink to="/settings/security">Security</NuxtLink>
           </a-menu-item>
-        </a-sub-menu>
+        </a-sub-menu> -->
       </a-menu>
     </a-layout-sider>
 
@@ -147,7 +147,7 @@
               <template #icon><user-outlined /></template>
             </a-avatar>
             <template #overlay>
-              <a-menu>
+              <!-- <a-menu>
                 <a-menu-item key="profile">
                   <NuxtLink to="/settings/profile">Profile</NuxtLink>
                 </a-menu-item>
@@ -156,7 +156,7 @@
                 </a-menu-item>
                 <a-menu-divider />
                 <a-menu-item key="logout">Logout</a-menu-item>
-              </a-menu>
+              </a-menu> -->
             </template>
           </a-dropdown>
         </div>
