@@ -2,15 +2,23 @@
 import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   css: ["~/assets/css/main.css"],
 
   vite: {
     plugins: [tailwindcss()],
   },
 
-  modules: ["@ant-design-vue/nuxt", "@nuxtjs/google-fonts"],
+  modules: [
+    "@ant-design-vue/nuxt",
+    "@nuxtjs/google-fonts",
+    "@pinia/nuxt",
+  ],  runtimeConfig: {
 
+  public: {
+      apiEndPoint: process.env.NUXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000',
+    },
+  },
   // Google Fonts Configuration
   googleFonts: {
     outputDir: "assets/fonts/google",

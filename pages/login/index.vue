@@ -43,33 +43,66 @@
 </template>
 
 <script setup lang="ts">
+import { useLoginStore } from '~/stores/login/loginStore';
 
 definePageMeta({
-  layout: 'login'
+  layout: 'login',
 })
 
-const token = useCookie<string | null>('token') as Ref<string | null>;
-const showPassword = ref(false);
+const loginStore = useLoginStore();
+
+const errorMessage = ref('');
+const snackbar = ref(false);
+const messageInvalid = ref('');
+const errors = ref<Partial<Error>>({});
+
+// Bind login form inputs
 const username = ref('');
 const password = ref('');
-const errorMessage = ref('');
-const router = useRouter();
 
-const login = (e: Event) => {
+// Watch and sync with store.user
+watchEffect(() => {
+  loginStore.user.email = username.value; // if login by email
+  loginStore.user.password = password.value;
+});
+
+const login = async (e: Event) => {
   e.preventDefault();
 
-  const dummyToken = 'sample_token';
-  if (username.value === 'Admin' && password.value === '123456') {
-    token.value = dummyToken;
-    console.log('Logging in successful');
-    router.push('/');
-  } else {
-    console.log('Invalid credentials');
-    errorMessage.value = 'Invalid username or password. Please try again.';
-  }
-}
+  errors.value = {};
+  errorMessage.value = '';
+  snackbar.value = false;
 
+  try {
+    if (!loginStore.user.email || !loginStore.user.password) {
+      if (!loginStore.user.email) {
+        errors.value.message = "Username is required";
+      }
+      if (!loginStore.user.password) {
+        errors.value.message = "Password is required";
+      }
+      snackbar.value = true;
+      return;
+    }
+    const response = await loginStore.fetchLogin();
+    if (response && response.data) {
+    } else {
+      messageInvalid.value = "Login failed. Please try again.";
+      snackbar.value = true;
+    }
+  } catch (error: any) {
+    if (error?.errors) {
+      errors.value = error.errors;
+    } else if (error?.error) {
+      messageInvalid.value = error.error;
+    } else {
+      messageInvalid.value = "An unexpected error occurred.";
+    }
+    snackbar.value = true;
+  }
+};
 </script>
+
 
 <style scoped lang="css">
 .login-container {
