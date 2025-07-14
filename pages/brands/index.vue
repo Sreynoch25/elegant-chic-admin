@@ -1,10 +1,15 @@
 <template>
   <div>
-    <a-page-header title="Product Categories" subtitle="Manage product categories">
+    <a-page-header title="Brands" subtitle="Manage product brands">
       <template #extra>
         <div style="display: flex;">
+          <a-button>
+            <NuxtLink to="/products">
+              <left-outlined /> Back to Products
+            </NuxtLink>
+          </a-button>
           <a-button type="primary" @click="showModal" style="margin-left: 0.5rem;">
-            <plus-outlined /> Add Category
+            <plus-outlined /> Add Brand
           </a-button>
         </div>
       </template>
@@ -13,27 +18,38 @@
     <a-card>
       <a-table 
         :columns="columns" 
-        :data-source="categories" 
+        :data-source="brands" 
         :loading="loading" 
         row-key="id"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'group'">
-            <a-tag color="blue">{{ record.group?.name || 'No Group' }}</a-tag>
+          <template v-if="column.key === 'logo_url'">
+            <a-image 
+              :src="record.logo_url" 
+              :width="50" 
+              :height="50" 
+              style="object-fit: cover; border-radius: 4px;"
+              :preview="true"
+            />
+          </template>
+          <template v-if="column.key === 'is_featured'">
+            <a-tag :color="record.is_featured ? 'green' : 'default'">
+              {{ record.is_featured ? 'Featured' : 'Not Featured' }}
+            </a-tag>
           </template>
           <template v-if="column.key === 'created_at'">
             <span>{{ formatDate(record.created_at) }}</span>
           </template>
           <template v-if="column.key === 'action'">
             <div class="space-x-2" style="display: flex;">
-              <a-button type="primary" size="small" @click="editCategory(record)">
+              <a-button type="primary" size="small" @click="editBrand(record)">
                 Edit
               </a-button>
               <a-popconfirm 
-                title="Are you sure you want to delete this category?" 
+                title="Are you sure you want to delete this brand?" 
                 ok-text="Yes"
                 cancel-text="No" 
-                @confirm="deleteCategory(record.id)"
+                @confirm="deleteBrand(record.id)"
               >
                 <a-button size="small" style="margin-left: 0.5rem;">
                   Delete
@@ -45,22 +61,22 @@
       </a-table>
     </a-card>
 
-    <!-- Add/Edit Category Modal -->
+    <!-- Add/Edit Brand Modal -->
     <a-modal 
-      :title="modalMode === 'add' ? 'Add New Category' : 'Edit Category'" 
+      :title="modalMode === 'add' ? 'Add New Brand' : 'Edit Brand'" 
       v-model:open="modalVisible"
       :confirm-loading="confirmLoading" 
       @ok="handleSubmit" 
       @cancel="handleCancel"
     >
-      <a-form ref="formRef" :model="formState" :rules="formRules" layout="vertical">
+      <a-form ref="formRef" :model="formState"  layout="vertical">
         <a-form-item 
-          label="Category Name" 
+          label="Brand Name" 
           name="name"
         >
           <a-input 
             v-model:value="formState.name" 
-            placeholder="Enter category name"
+            placeholder="Enter brand name"
             @input="generateSlug"
           />
         </a-form-item>
@@ -71,38 +87,49 @@
         >
           <a-input 
             v-model:value="formState.slug" 
-            placeholder="Enter category slug" 
+            placeholder="Enter brand slug" 
           />
           <div class="text-gray-500 text-sm">
             Used in URLs. Will be auto-generated if left empty.
           </div>
         </a-form-item>
         
-        <a-form-item label="Description" name="description">
+        <a-form-item 
+          label="Description" 
+          name="description"
+        >
           <a-textarea 
             v-model:value="formState.description" 
             :rows="3"
-            placeholder="Enter category description" 
+            placeholder="Enter brand description" 
           />
         </a-form-item>
         
         <a-form-item 
-          label="Category Group" 
-          name="category_group_id"
+          label="Logo URL" 
+          name="logo_url"
         >
-          <a-select 
-            v-model:value="formState.category_group_id" 
-            placeholder="Select category group"
-            :loading="loadingCategoryGroups"
-          >
-            <a-select-option 
-              v-for="group in categoryGroups" 
-              :key="group.id" 
-              :value="group.id"
-            >
-              {{ group.name }}
-            </a-select-option>
-          </a-select>
+          <a-input 
+            v-model:value="formState.logo_url" 
+            placeholder="Enter logo URL" 
+          />
+          <div class="text-gray-500 text-sm">
+            Enter the full URL to the brand logo image.
+          </div>
+        </a-form-item>
+        
+        <a-form-item 
+          label="Featured" 
+          name="is_featured"
+        >
+          <a-switch 
+            v-model:checked="formState.is_featured"
+            checked-children="Yes"
+            un-checked-children="No"
+          />
+          <div class="text-gray-500 text-sm">
+            Featured brands appear prominently on the site.
+          </div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -111,46 +138,33 @@
 
 <script setup lang="ts">
 // Types
-interface CategoryGroup {
-  id: string
-  name: string
-  slug: string
-  created_at: string
-  updated_at: string
-}
-
-interface Category {
+interface Brand {
   id: string
   name: string
   slug: string
   description: string
-  category_group_id: string
+  logo_url: string
+  is_featured: number
   created_at: string
   updated_at: string
-  group?: CategoryGroup
 }
 
-interface CategoryResponse {
-  success: boolean
+interface BrandResponse {
+  status: number
   message: string
-  data: Category[]
+  data: Brand[]
 }
 
-interface CategoryGroupResponse {
-  success: boolean
-  message: string
-  data: CategoryGroup[]
-}
-
-interface CategoryFormState {
+interface BrandFormState {
   name: string
   slug: string
   description: string
-  category_group_id: string
+  logo_url: string
+  is_featured: boolean
 }
 
 interface ApiResponse {
-  success: boolean
+  status?: number
   message: string
   data?: any
 }
@@ -160,44 +174,52 @@ definePageMeta({
 })
 
 // Reactive variables
-const categories = ref<Category[]>([])
-const categoryGroups = ref<CategoryGroup[]>([])
+const brands = ref<Brand[]>([])
 const loading = ref(false)
-const loadingCategoryGroups = ref(false)
 const error = ref<string | null>(null)
 
 // Modal state
 const modalVisible = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
 const confirmLoading = ref(false)
-const editingCategoryId = ref<string | null>(null)
+const editingBrandId = ref<string | null>(null)
 
 // Form state and reference
 const formRef = ref<any>()
-const formState = ref<CategoryFormState>({
+const formState = ref<BrandFormState>({
   name: '',
   slug: '',
   description: '',
-  category_group_id: ''
+  logo_url: '',
+  is_featured: false
 })
 
 // Form validation rules
 const formRules = {
   name: [
-    { required: true, message: 'Please enter category name' },
-    { min: 2, message: 'Category name must be at least 2 characters' }
+    { required: true, message: 'Please enter brand name' },
+    { min: 2, message: 'Brand name must be at least 2 characters' }
   ],
   slug: [
-    { required: true, message: 'Please enter category slug' },
+    { required: true, message: 'Please enter brand slug' },
     { pattern: /^[a-z0-9-]+$/, message: 'Slug can only contain lowercase letters, numbers, and hyphens' }
   ],
-  category_group_id: [
-    { required: true, message: 'Please select a category group' }
+  description: [
+    { required: true, message: 'Please enter brand description' }
+  ],
+  logo_url: [
+    { required: true, message: 'Please enter logo URL' },
+    { type: 'url', message: 'Please enter a valid URL' }
   ]
 }
 
 // Table columns
 const columns = [
+  {
+    title: 'Logo',
+    key: 'logo_url',
+    width: 80,
+  },
   {
     title: 'Name',
     dataIndex: 'name',
@@ -214,8 +236,9 @@ const columns = [
     key: 'description',
   },
   {
-    title: 'Group',
-    key: 'group',
+    title: 'Featured',
+    key: 'is_featured',
+    width: 100,
   },
   {
     title: 'Created At',
@@ -229,42 +252,24 @@ const columns = [
   },
 ]
 
-// Fetch categories
-const fetchCategories = async () => {
+// Fetch brands
+const fetchBrands = async () => {
   loading.value = true
   error.value = null
   try {
-    const { data } = await useFetchDataApi<CategoryResponse>('/categories')
-    if (data.value?.success && Array.isArray(data.value.data)) {
-      categories.value = data.value.data
+    const { data } = await useFetchDataApi<BrandResponse>('/brands')
+    if (data.value?.status === 200 && Array.isArray(data.value.data)) {
+      brands.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No categories returned'
+      error.value = data.value?.message || 'No brands returned'
       message.error(error.value)
     }
   } catch (err: any) {
     console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch categories'
+    error.value = 'Failed to fetch brands'
     message.error(error.value)
   } finally {
     loading.value = false
-  }
-}
-
-// Fetch category groups for the dropdown
-const fetchCategoryGroups = async () => {
-  loadingCategoryGroups.value = true
-  try {
-    const { data } = await useFetchDataApi<CategoryGroupResponse>('/category-groups')
-    if (data.value?.success && Array.isArray(data.value.data)) {
-      categoryGroups.value = data.value.data
-    } else {
-      message.error(data.value?.message || 'Failed to fetch category groups')
-    }
-  } catch (err: any) {
-    console.error('❌ Fetch Category Groups Error:', err)
-    message.error('Failed to fetch category groups')
-  } finally {
-    loadingCategoryGroups.value = false
   }
 }
 
@@ -285,27 +290,29 @@ const resetForm = () => {
     name: '',
     slug: '',
     description: '',
-    category_group_id: ''
+    logo_url: '',
+    is_featured: false
   }
-  editingCategoryId.value = null
+  editingBrandId.value = null
   if (formRef.value) {
     formRef.value.resetFields()
   }
 }
 
-// Edit category function with proper typing
-const editCategory = (record: Record<string, any>): void => {
-  const category = record as Category
+// Edit brand function
+const editBrand = (record: Record<string, any>): void => {
+  const brand = record as Brand
   modalMode.value = 'edit'
   modalVisible.value = true
-  editingCategoryId.value = category.id
+  editingBrandId.value = brand.id
   
   // Populate form with existing data
   formState.value = {
-    name: category.name,
-    slug: category.slug,
-    description: category.description || '',
-    category_group_id: category.category_group_id
+    name: brand.name,
+    slug: brand.slug,
+    description: brand.description || '',
+    logo_url: brand.logo_url || '',
+    is_featured: brand.is_featured === 1
   }
 }
 
@@ -328,14 +335,14 @@ const handleSubmit = async () => {
     confirmLoading.value = true
     
     if (modalMode.value === 'add') {
-      await createCategory()
+      await createBrand()
     } else {
-      await updateCategory()
+      await updateBrand()
     }
     
     modalVisible.value = false
     resetForm()
-    await fetchCategories()
+    await fetchBrands()
     
   } catch (error) {
     console.error('Form validation failed:', error)
@@ -344,76 +351,74 @@ const handleSubmit = async () => {
   }
 }
 
-// Create category function
-const createCategory = async () => {
+// Create brand function
+const createBrand = async () => {
   try {
-    const { data } = await useFetchDataApi<ApiResponse>('/categories', {
+    const { data } = await useFetchDataApi<ApiResponse>('/brands', {
       method: 'POST',
       body: {
         name: formState.value.name,
-        slug: formState.value.slug,
         description: formState.value.description,
-        category_group_id: formState.value.category_group_id
+        logo_url: formState.value.logo_url,
+        is_featured: formState.value.is_featured ? 1 : 0
       }
     })
     
-    if (data.value?.success) {
-      message.success(data.value.message || 'Category created successfully')
+    if (data.value?.message) {
+      message.success(data.value.message)
     } else {
-      message.error(data.value?.message || 'Failed to create category')
-      throw new Error(data.value?.message || 'Failed to create category')
+      message.success('Brand created successfully')
     }
   } catch (error: any) {
     console.error('❌ Create Error:', error)
-    message.error(error.message || 'Failed to create category')
+    message.error(error.message || 'Failed to create brand')
     throw error
   }
 }
 
-// Update category function
-const updateCategory = async () => {
-  if (!editingCategoryId.value) return
+// Update brand function
+const updateBrand = async () => {
+  if (!editingBrandId.value) return
   
   try {
-    const { data } = await useFetchDataApi<ApiResponse>(`/categories/${editingCategoryId.value}`, {
+    const { data } = await useFetchDataApi<ApiResponse>(`/brands/${editingBrandId.value}`, {
       method: 'PUT',
       body: {
         name: formState.value.name,
-        slug: formState.value.slug,
         description: formState.value.description,
-        category_group_id: formState.value.category_group_id
+        logo_url: formState.value.logo_url,
+        is_featured: formState.value.is_featured ? 1 : 0
       }
     })
     
-    if (data.value?.success) {
-      message.success(data.value.message || 'Category updated successfully')
+    if (data.value?.message) {
+      message.success(data.value.message)
     } else {
-      message.error(data.value?.message || 'Failed to update category')
-      throw new Error(data.value?.message || 'Failed to update category')
+      message.success('Brand updated successfully')
     }
   } catch (error: any) {
     console.error('❌ Update Error:', error)
-    message.error(error.message || 'Failed to update category')
+    message.error(error.message || 'Failed to update brand')
     throw error
   }
 }
 
-// Delete category function
-const deleteCategory = async (categoryId: string) => {
+// Delete brand function
+const deleteBrand = async (brandId: string) => {
   try {
-    const { data } = await useFetchDataApi<ApiResponse>(`/categories/${categoryId}`, {
+    const { data } = await useFetchDataApi<ApiResponse>(`/brands/${brandId}`, {
       method: 'DELETE'
     })
     
-    if (data.value?.success) {
-      message.success(data.value.message || 'Category deleted successfully')
-      await fetchCategories()
+    if (data.value?.message) {
+      message.success(data.value.message)
     } else {
-      message.error(data.value?.message || 'Failed to delete category')
+      message.success('Brand deleted successfully')
     }
+    await fetchBrands()
   } catch (error: any) {
     console.error('❌ Delete Error:', error)
-    message.error(error.message || 'Failed to delete category')
+    message.error(error.message || 'Failed to delete brand')
   }
 }
 
@@ -430,10 +435,7 @@ const formatDate = (dateString: string) => {
 
 // Initialize
 onMounted(async () => {
-  await Promise.all([
-    fetchCategories(),
-    fetchCategoryGroups()
-  ])
+  await fetchBrands()
 })
 </script>
 

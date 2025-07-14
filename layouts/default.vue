@@ -16,14 +16,13 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Site Info submenu -->
-        <a-sub-menu key="site-info">
-          <template #icon><info-circle-outlined /></template>
-          <template #title>Site Info</template>
-          <a-menu-item key="auth">
-            <NuxtLink to="/site-info/auth">Auth</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
+        <!-- Delivery -->
+        <a-menu-item key="deliveries">
+          <template #icon><crown-outlined /></template>
+          <NuxtLink to="/deliveries">
+            <span>Deliveries</span>
+          </NuxtLink>
+        </a-menu-item>
 
         <!-- Categories submenu -->
         <a-sub-menu key="categories">
@@ -112,9 +111,6 @@
           <a-menu-item key="products-add">
             <NuxtLink to="/products/add">Add Product</NuxtLink>
           </a-menu-item>
-          <!-- <a-menu-item key="products-categories">
-            <NuxtLink to="/products/categories">Categories</NuxtLink>
-          </a-menu-item> -->
         </a-sub-menu>
 
         <!-- Orders submenu -->
@@ -243,7 +239,7 @@ const route = useRoute()
 const selectedKeys = computed(() => {
   const path = route.path
   if (path === '/') return ['dashboard']
-  if (path.startsWith('/site-info')) return ['site-info']
+  if (path.startsWith('/deliveries')) return ['deliveries']
   if (path.startsWith('/categories')) return ['categories-list']
   if (path.startsWith('/sizes')) return ['sizes-list']
   if (path.startsWith('/brands')) return ['brands']
