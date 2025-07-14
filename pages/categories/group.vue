@@ -9,7 +9,7 @@
     </div>
 
     <!-- Search and Filter -->
-    <div class="mb-4">
+    <div class="!m-4">
       <a-input-search
         v-model:value="searchTerm"
         placeholder="Search category groups..."
