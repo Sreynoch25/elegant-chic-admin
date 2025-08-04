@@ -8,7 +8,7 @@
         <h1 class="text-white text-xl font-bold" v-else>AP</h1>
       </div>
 
-      <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline">
+      <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
         <a-menu-item key="dashboard">
           <template #icon><dashboard-outlined /></template>
           <NuxtLink to="/">
@@ -18,7 +18,7 @@
 
         <!-- Delivery -->
         <a-menu-item key="deliveries">
-          <template #icon><crown-outlined /></template>
+          <template #icon><truck-outlined /></template>
           <NuxtLink to="/deliveries">
             <span>Deliveries</span>
           </NuxtLink>
@@ -226,7 +226,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 // Reactive data
@@ -234,30 +234,102 @@ const collapsed = ref(false)
 const isMobile = ref(false)
 const siderVisible = ref(false)
 const route = useRoute()
+const openKeys = ref([])
 
-// Computed property for selected menu keys
+// Computed property for selected menu keys with proper path matching
 const selectedKeys = computed(() => {
   const path = route.path
+  
+  // Dashboard
   if (path === '/') return ['dashboard']
+  
+  // Deliveries
   if (path.startsWith('/deliveries')) return ['deliveries']
-  if (path.startsWith('/categories')) return ['categories-list']
-  if (path.startsWith('/sizes')) return ['sizes-list']
+  
+  // Categories
+  if (path === '/categories') return ['categories-list']
+  if (path === '/categories/group') return ['categories-group']
+  
+  // Sizes
+  if (path === '/sizes') return ['sizes-list']
+  if (path === '/sizes/group') return ['size-group']
+  
+  // Brands
   if (path.startsWith('/brands')) return ['brands']
-  if (path.startsWith('/promotions')) return ['promotions']
+  
+  // Promotions
+  if (path === '/promotions/discounts') return ['discounts']
+  
+  // Banners
   if (path.startsWith('/banners')) return ['banners']
+  
+  // Seasons
   if (path.startsWith('/seasons')) return ['seasons']
+  
+  // Colors
   if (path.startsWith('/colors')) return ['colors']
-  if (path.startsWith('/users')) return ['users-list']
-  if (path.startsWith('/products')) return ['products-list']
-  if (path.startsWith('/orders')) return ['orders-list']
-  if (path.startsWith('/reports')) return ['reports-sales']
-  if (path.startsWith('/settings')) return ['settings-general']
+  
+  // Users
+  if (path === '/users') return ['users-list']
+  if (path === '/users/add') return ['users-add']
+  
+  // Products
+  if (path === '/products') return ['products-list']
+  if (path === '/products/add') return ['products-add']
+  
+  // Orders
+  if (path === '/orders') return ['orders-list']
+  if (path === '/orders/pending') return ['orders-pending']
+  if (path === '/orders/complete') return ['orders-complete']
+  
+  // Reports
+  if (path === '/reports/sales') return ['reports-sales']
+  if (path === '/reports/inventory') return ['reports-inventory']
+  
+  // Settings
+  if (path === '/settings/general') return ['settings-general']
+  if (path === '/settings/profile') return ['settings-profile']
+  if (path === '/settings/security') return ['settings-security']
+  
   return []
 })
 
+// Auto-open parent menu when child is selected
+watch(selectedKeys, (newKeys) => {
+  if (newKeys.length > 0) {
+    const key = newKeys[0]
+    
+    // Define parent-child relationships
+    const menuHierarchy = {
+      'categories-list': 'categories',
+      'categories-group': 'categories',
+      'sizes-list': 'sizes',
+      'size-group': 'sizes',
+      'discounts': 'promotions',
+      'users-list': 'users',
+      'users-add': 'users',
+      'products-list': 'products',
+      'products-add': 'products',
+      'orders-list': 'orders',
+      'orders-pending': 'orders',
+      'orders-complete': 'orders',
+      'reports-sales': 'reports',
+      'reports-inventory': 'reports',
+      'settings-general': 'settings',
+      'settings-profile': 'settings',
+      'settings-security': 'settings'
+    }
+    
+    const parentKey = menuHierarchy[key]
+    if (parentKey && !openKeys.value.includes(parentKey)) {
+      openKeys.value = [...openKeys.value, parentKey]
+    }
+  }
+}, { immediate: true })
+
 // Methods
-const handleCollapse = (collapsed) => {
-  collapsed.value = collapsed
+const handleCollapse = (isCollapsed) => {
+  collapsed.value = isCollapsed
 }
 
 const handleBreakpoint = (broken) => {

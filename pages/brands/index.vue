@@ -3,11 +3,6 @@
     <a-page-header title="Brands" subtitle="Manage product brands">
       <template #extra>
         <div style="display: flex;">
-          <a-button>
-            <NuxtLink to="/products">
-              <left-outlined /> Back to Products
-            </NuxtLink>
-          </a-button>
           <a-button type="primary" @click="showModal" style="margin-left: 0.5rem;">
             <plus-outlined /> Add Brand
           </a-button>
@@ -69,7 +64,7 @@
       @ok="handleSubmit" 
       @cancel="handleCancel"
     >
-      <a-form ref="formRef" :model="formState"  layout="vertical">
+      <a-form ref="formRef" :model="formState" layout="vertical">
         <a-form-item 
           label="Brand Name" 
           name="name"
@@ -106,15 +101,25 @@
         </a-form-item>
         
         <a-form-item 
-          label="Logo URL" 
-          name="logo_url"
+          label="Brand Logo" 
+          name="logo"
         >
-          <a-input 
-            v-model:value="formState.logo_url" 
-            placeholder="Enter logo URL" 
-          />
+          <a-upload
+            v-model:file-list="logoFileList"
+            :before-upload="beforeLogoUpload"
+            :custom-request="customRequest"
+            @change="handleLogoChange"
+            list-type="picture-card"
+            :max-count="1"
+            accept="image/*"
+          >
+            <div v-if="logoFileList.length < 1">
+              <plus-outlined />
+              <div style="margin-top: 8px">Upload Logo</div>
+            </div>
+          </a-upload>
           <div class="text-gray-500 text-sm">
-            Enter the full URL to the brand logo image.
+            Upload a brand logo image. Maximum file size: 2MB.
           </div>
         </a-form-item>
         
@@ -160,6 +165,7 @@ interface BrandFormState {
   slug: string
   description: string
   logo_url: string
+  logo_file: File | null
   is_featured: boolean
 }
 
@@ -191,8 +197,12 @@ const formState = ref<BrandFormState>({
   slug: '',
   description: '',
   logo_url: '',
+  logo_file: null,
   is_featured: false
 })
+
+// File upload state
+const logoFileList = ref<any[]>([])
 
 // Form validation rules
 const formRules = {
@@ -206,10 +216,6 @@ const formRules = {
   ],
   description: [
     { required: true, message: 'Please enter brand description' }
-  ],
-  logo_url: [
-    { required: true, message: 'Please enter logo URL' },
-    { type: 'url', message: 'Please enter a valid URL' }
   ]
 }
 
@@ -252,6 +258,43 @@ const columns = [
   },
 ]
 
+// File upload handling
+const handleLogoChange = (info: any) => {
+  logoFileList.value = [...info.fileList]
+  
+  if (info.file.status === 'done') {
+    message.success(`${info.file.name} file uploaded successfully`)
+    formState.value.logo_file = info.file.originFileObj
+  } else if (info.file.status === 'error') {
+    message.error(`${info.file.name} file upload failed`)
+  }
+}
+
+const beforeLogoUpload = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  if (!isImage) {
+    message.error('You can only upload image files!')
+    return false
+  }
+  
+  const isLt2M = file.size / 1024 / 1024 < 2
+  if (!isLt2M) {
+    message.error('Image must be smaller than 2MB!')
+    return false
+  }
+  
+  // Store the file for later use
+  formState.value.logo_file = file
+  return false // Prevent automatic upload
+}
+
+const customRequest = (options: any) => {
+  // Custom upload handler - just mark as done since we handle upload in form submission
+  setTimeout(() => {
+    options.onSuccess({}, options.file)
+  }, 0)
+}
+
 // Fetch brands
 const fetchBrands = async () => {
   loading.value = true
@@ -291,9 +334,11 @@ const resetForm = () => {
     slug: '',
     description: '',
     logo_url: '',
+    logo_file: null,
     is_featured: false
   }
   editingBrandId.value = null
+  logoFileList.value = []
   if (formRef.value) {
     formRef.value.resetFields()
   }
@@ -312,7 +357,18 @@ const editBrand = (record: Record<string, any>): void => {
     slug: brand.slug,
     description: brand.description || '',
     logo_url: brand.logo_url || '',
+    logo_file: null,
     is_featured: brand.is_featured === 1
+  }
+  
+  // Set up file list for existing logo
+  if (brand.logo_url) {
+    logoFileList.value = [{
+      uid: '-1',
+      name: 'current-logo',
+      status: 'done',
+      url: brand.logo_url,
+    }]
   }
 }
 
@@ -354,14 +410,23 @@ const handleSubmit = async () => {
 // Create brand function
 const createBrand = async () => {
   try {
+    const formData = new FormData()
+    formData.append('name', formState.value.name)
+    formData.append('slug', formState.value.slug)
+    formData.append('description', formState.value.description)
+    
+    // Handle file upload for logo
+    if (formState.value.logo_file) {
+      formData.append('logo', formState.value.logo_file)
+    } else if (formState.value.logo_url) {
+      formData.append('logo_url', formState.value.logo_url)
+    }
+    
+    formData.append('is_featured', formState.value.is_featured ? '1' : '0')
+
     const { data } = await useFetchDataApi<ApiResponse>('/brands', {
       method: 'POST',
-      body: {
-        name: formState.value.name,
-        description: formState.value.description,
-        logo_url: formState.value.logo_url,
-        is_featured: formState.value.is_featured ? 1 : 0
-      }
+      body: formData
     })
     
     if (data.value?.message) {
@@ -381,14 +446,24 @@ const updateBrand = async () => {
   if (!editingBrandId.value) return
   
   try {
+    const formData = new FormData()
+    formData.append('_method', 'PUT')
+    formData.append('name', formState.value.name)
+    formData.append('slug', formState.value.slug)
+    formData.append('description', formState.value.description)
+    
+    // Handle file upload for logo
+    if (formState.value.logo_file) {
+      formData.append('logo', formState.value.logo_file)
+    } else if (formState.value.logo_url) {
+      formData.append('logo_url', formState.value.logo_url)
+    }
+    
+    formData.append('is_featured', formState.value.is_featured ? '1' : '0')
+
     const { data } = await useFetchDataApi<ApiResponse>(`/brands/${editingBrandId.value}`, {
-      method: 'PUT',
-      body: {
-        name: formState.value.name,
-        description: formState.value.description,
-        logo_url: formState.value.logo_url,
-        is_featured: formState.value.is_featured ? 1 : 0
-      }
+      method: 'POST', // Using POST with _method override
+      body: formData
     })
     
     if (data.value?.message) {
