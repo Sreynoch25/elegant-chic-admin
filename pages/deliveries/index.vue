@@ -4,28 +4,18 @@
       <template #extra>
         <div style="display: flex;">
           <a-button type="primary" @click="showModal" style="margin-left: 0.5rem;">
-            <plus-outlined /> Add Delivery 
+            <plus-outlined /> Add Delivery
           </a-button>
         </div>
       </template>
     </a-page-header>
 
     <a-card>
-      <a-table 
-        :columns="columns" 
-        :data-source="deliveries" 
-        :loading="loading" 
-        row-key="id"
-      >
+      <a-table :columns="columns" :data-source="deliveries" :loading="loading" row-key="id">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'logo'">
-            <a-image 
-              :src="record.logo" 
-              :width="50" 
-              :height="50" 
-              style="object-fit: cover; border-radius: 4px;"
-              :preview="true"
-            />
+            <a-image :src="record.logo" :width="50" :height="50" style="object-fit: cover; border-radius: 4px;"
+              :preview="true" />
           </template>
           <template v-if="column.key === 'delivery_fee'">
             <span>${{ record.delivery_fee }}</span>
@@ -43,12 +33,8 @@
               <a-button type="primary" size="small" @click="editDelivery(record)">
                 Edit
               </a-button>
-              <a-popconfirm 
-                title="Are you sure you want to delete this delivery method?" 
-                ok-text="Yes"
-                cancel-text="No" 
-                @confirm="deleteDelivery(record.id)"
-              >
+              <a-popconfirm title="Are you sure you want to delete this delivery method?" ok-text="Yes" cancel-text="No"
+                @confirm="deleteDelivery(record.id)">
                 <a-button size="small" style="margin-left: 0.5rem;">
                   Delete
                 </a-button>
@@ -60,80 +46,39 @@
     </a-card>
 
     <!-- Add/Edit Delivery Modal -->
-    <a-modal 
-      :title="modalMode === 'add' ? 'Add New Delivery Method' : 'Edit Delivery Method'" 
-      v-model:open="modalVisible"
-      :confirm-loading="confirmLoading" 
-      @ok="handleSubmit" 
-      @cancel="handleCancel"
-      width="600px"
-    >
+    <a-modal :title="modalMode === 'add' ? 'Add New Delivery Method' : 'Edit Delivery Method'"
+      v-model:open="modalVisible" :confirm-loading="confirmLoading" @ok="handleSubmit" @cancel="handleCancel"
+      width="600px">
       <a-form ref="formRef" :model="formState" :rules="formRules" layout="vertical">
-        <a-form-item 
-          label="Delivery Method Name" 
-          name="name"
-        >
-          <a-input 
-            v-model:value="formState.name" 
-            placeholder="Enter delivery method name"
-          />
+        <a-form-item label="Delivery Method Name" name="name">
+          <a-input v-model:value="formState.name" placeholder="Enter delivery method name" />
         </a-form-item>
-        
-        <a-form-item 
-          label="Description" 
-          name="description"
-        >
-          <a-textarea 
-            v-model:value="formState.description" 
-            :rows="3"
-            placeholder="Enter delivery method description" 
-          />
+
+        <a-form-item label="Description" name="description">
+          <a-textarea v-model:value="formState.description" :rows="3" placeholder="Enter delivery method description" />
         </a-form-item>
 
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item 
-              label="Delivery Fee ($)" 
-              name="delivery_fee"
-            >
-              <a-input-number 
-                v-model:value="formState.delivery_fee" 
-                :min="0"
-                :precision="2"
-                placeholder="Enter delivery fee"
-                style="width: 100%"
-                :addon-before="'$'"
-              />
+            <a-form-item label="Delivery Fee ($)" name="delivery_fee">
+              <a-input-number v-model:value="formState.delivery_fee" :min="0" :precision="2"
+                placeholder="Enter delivery fee" style="width: 100%" :addon-before="'$'" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item 
-              label="Status" 
-              name="is_active"
-            >
-              <a-switch 
-                v-model:checked="formState.is_active"
-                checked-children="Active"
-                un-checked-children="Inactive"
-              />
+            <a-form-item label="Status" name="is_active">
+              <a-switch v-model:checked="formState.is_active" checked-children="Active"
+                un-checked-children="Inactive" />
               <div class="text-gray-500 text-sm" style="margin-top: 8px;">
                 Active delivery methods are available for customers.
               </div>
             </a-form-item>
           </a-col>
         </a-row>
-        
-        <a-form-item 
-          label="Logo Upload" 
-          name="logo"
-        >
-          <a-upload
-            v-model:file-list="fileList"
-            :before-upload="beforeUpload"
-            :max-count="1"
-            accept="image/jpeg,image/png,image/jpg,image/webp"
-            list-type="picture"
-          >
+
+        <a-form-item label="Logo Upload" name="logo">
+          <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :max-count="1"
+            accept="image/jpeg,image/png,image/jpg,image/webp" list-type="picture">
             <a-button>
               <upload-outlined />
               Upload Logo
@@ -352,7 +297,7 @@ const editDelivery = (record: Record<string, any>): void => {
   modalMode.value = 'edit'
   modalVisible.value = true
   editingDeliveryId.value = delivery.id
-  
+
   // Populate form with existing data
   formState.value = {
     name: delivery.name,
@@ -361,7 +306,7 @@ const editDelivery = (record: Record<string, any>): void => {
     logo: delivery.logo || '',
     is_active: delivery.is_active
   }
-  
+
   // Update fileList for edit mode
   if (delivery.logo) {
     fileList.value = [{
@@ -380,17 +325,17 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     confirmLoading.value = true
-    
+
     if (modalMode.value === 'add') {
       await createDelivery()
     } else {
       await updateDelivery()
     }
-    
+
     modalVisible.value = false
     resetForm()
     await fetchDeliveries()
-    
+
   } catch (error) {
     console.error('Form validation failed:', error)
   } finally {
@@ -409,12 +354,12 @@ const createDelivery = async () => {
     if (formState.value.logo instanceof File) {
       formData.append('logo', formState.value.logo)
     }
-    
+
     const { data } = await useFetchDataApi<ApiResponse>('/deliveries', {
       method: 'POST',
       body: formData,
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -430,9 +375,10 @@ const createDelivery = async () => {
 // Update delivery function
 const updateDelivery = async () => {
   if (!editingDeliveryId.value) return
-  
+
   try {
     const formData = new FormData()
+    formData.append('_method', 'PUT')
     formData.append('name', formState.value.name)
     formData.append('description', formState.value.description)
     formData.append('delivery_fee', String(formState.value.delivery_fee))
@@ -440,12 +386,12 @@ const updateDelivery = async () => {
     if (formState.value.logo instanceof File) {
       formData.append('logo', formState.value.logo)
     }
-    
+
     const { data } = await useFetchDataApi<ApiResponse>(`/deliveries/${editingDeliveryId.value}`, {
       method: 'PUT',
       body: formData,
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -464,7 +410,7 @@ const deleteDelivery = async (deliveryId: string) => {
     const { data } = await useFetchDataApi<ApiResponse>(`/deliveries/${deliveryId}`, {
       method: 'DELETE'
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -495,7 +441,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.space-x-2 > * + * {
+.space-x-2>*+* {
   margin-left: 0.5rem;
 }
 

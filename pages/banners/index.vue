@@ -235,9 +235,15 @@ const formRules = {
   big_image: [
     {
       validator: async (_: any, value: File | string) => {
+        // For add mode, require an image
         if (modalMode.value === 'add' && !value) {
           return Promise.reject('Please upload a big image');
         }
+        // For edit mode, allow existing string URLs or new files
+        if (modalMode.value === 'edit' && !value) {
+          return Promise.reject('Please upload a big image or keep existing one');
+        }
+        // Validate file type if it's a new file
         if (value instanceof File) {
           const isImage = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(value.type);
           if (!isImage) {
@@ -251,9 +257,15 @@ const formRules = {
   small_image: [
     {
       validator: async (_: any, value: File | string) => {
+        // For add mode, require an image
         if (modalMode.value === 'add' && !value) {
           return Promise.reject('Please upload a small image');
         }
+        // For edit mode, allow existing string URLs or new files
+        if (modalMode.value === 'edit' && !value) {
+          return Promise.reject('Please upload a small image or keep existing one');
+        }
+        // Validate file type if it's a new file
         if (value instanceof File) {
           const isImage = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(value.type);
           if (!isImage) {
@@ -478,6 +490,7 @@ const updateBanner = async () => {
   
   try {
     const formData = new FormData()
+    formData.append('_method', 'PUT')
     formData.append('title', formState.value.title)
     formData.append('description', formState.value.description)
     formData.append('discount', String(formState.value.discount))
@@ -489,7 +502,7 @@ const updateBanner = async () => {
     }
     
     const { data } = await useFetchDataApi<ApiResponse>(`/banners/${editingBannerId.value}`, {
-      method: 'PUT',
+      method: 'POST',
       body: formData,
     })
     
