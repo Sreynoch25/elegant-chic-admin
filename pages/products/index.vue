@@ -1,300 +1,422 @@
 <template>
   <div>
-    <a-page-header title="Products" subtitle="Manage your product inventory">
+    <a-page-header title="Items" subtitle="Manage product items and variants">
       <template #extra>
-        <div class="space-x-2">
-          <a-button>
-            <NuxtLink to="/products/categories">
-              <folder-outlined /> Categories
-            </NuxtLink>
-          </a-button>
-          <a-button type="primary">
-            <NuxtLink to="/products/add">
-              <plus-outlined /> Add Product
-            </NuxtLink>
+        <div style="display: flex;">
+          <a-button type="primary" @click="showModal" style="margin-left: 0.5rem;">
+            <plus-outlined /> Add Item
           </a-button>
         </div>
       </template>
     </a-page-header>
 
     <a-card>
-      <div class="mb-4 flex justify-between items-center flex-wrap">
-        <a-input-search
-          placeholder="Search products"
-          style="width: 300px"
-          v-model:value="searchQuery"
-          @search="onSearch"
-        />
-
-        <div class="!space-x-2">
-          <a-select
-            v-model:value="filterCategory"
-            style="width: 200px"
-            placeholder="Filter by category"
-            allow-clear
-          >
-            <a-select-option
-              v-for="category in categories"
-              :key="category.slug"
-              :value="category.slug"
-            >
-              {{ category.name }}
-            </a-select-option>
-          </a-select>
-
-          <a-select
-            v-model:value="filterStatus"
-            style="width: 150px"
-            placeholder="Filter by status"
-            allow-clear
-          >
-            <a-select-option value="in-stock">In Stock</a-select-option>
-            <a-select-option value="low-stock">Low Stock</a-select-option>
-            <a-select-option value="out-of-stock">Out of Stock</a-select-option>
-          </a-select>
-        </div>
-      </div>
-
-      <a-table
-        :columns="columns"
-        :data-source="tableData"
-        :loading="isSpinning"
-        :row-key="(record) => record.id"
-        :expand-row-by-click="true"
-      >
+      <a-table :columns="columns" :data-source="items" :loading="loading" row-key="id" :expand-row-by-click="true">
         <template #expandedRowRender="{ record }">
-          <div class="p-4 bg-gray-50">
-            <h4 class="mb-3 font-semibold">Product Variants</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div
-                v-for="variant in record.variants"
-                :key="variant.id"
-                class="bg-white p-3 rounded border"
-              >
-                <div class="flex items-center space-x-3">
-                  <img
-                    :src="variant.image"
-                    :alt="`${record.name} - ${variant.color.name} ${variant.size.name}`"
-                    class="w-16 h-16 object-cover rounded"
-                  />
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-2 mb-1">
-                      <span
-                        class="w-4 h-4 rounded-full border"
-                        :style="{ backgroundColor: variant.color.hex_code }"
-                      ></span>
-                      <span class="font-medium">{{ variant.color.name }}</span>
-                      <span class="text-gray-500">{{ variant.size.name }}</span>
-                    </div>
-                    <div class="text-sm text-gray-600">
-                      <div>Stock: {{ variant.quantity }}</div>
-                      <div class="flex items-center space-x-2">
-                        <span class="text-gray-400 line-through">
-                          ${{ variant.price }}
-                        </span>
-                        <span class="font-semibold text-green-600">
-                          ${{ variant.final_price.toFixed(2) }}
-                        </span>
-                      </div>
-                      <div v-if="variant.discount" class="text-xs text-blue-600">
-                        {{ variant.discount.name }} (-{{ variant.discount.value }}%)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div style="margin: 16px 0;">
+            <h4>Variants</h4>
+            <a-table :columns="variantColumns" :data-source="record.variants" :pagination="false" row-key="id"
+              size="small">
+              <template #bodyCell="{ column, record: variant }">
+                <template v-if="column.key === 'image'">
+                  <a-image :src="variant.image" :width="40" :height="40" style="object-fit: cover; border-radius: 4px;"
+                    :preview="true" />
+                </template>
+                <template v-if="column.key === 'color'">
+                  <a-tag :color="variant.color?.hex_code">
+                    {{ variant.color?.name }}
+                  </a-tag>
+                </template>
+                <template v-if="column.key === 'size'">
+                  <a-tag>{{ variant.size?.name }}</a-tag>
+                </template>
+                <template v-if="column.key === 'price'">
+                  ${{ variant.final_price }}
+                </template>
+              </template>
+            </a-table>
           </div>
         </template>
 
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'name'">
-            <div class="flex items-center space-x-3">
-              <img
-                :src="getMainImage(record)"
-                :alt="record.name"
-                class="w-12 h-12 object-cover rounded"
-              />
-              <div>
-                <div class="font-medium">{{ record.name }}</div>
-                <div class="text-sm text-gray-500">{{ record.brand?.name }}</div>
-              </div>
-            </div>
+            <strong>{{ record.name }}</strong>
           </template>
-
-          <template v-if="column.key === 'variants'">
-            <div class="flex flex-wrap gap-1">
-              <a-tag
-                v-for="variant in record.variants.slice(0, 3)"
-                :key="variant.id"
-                size="small"
-              >
-                {{ variant.color.name }} {{ variant.size.name }}
-              </a-tag>
-              <a-tag v-if="record.variants.length > 3" size="small" color="blue">
-                +{{ record.variants.length - 3 }} more
-              </a-tag>
-            </div>
+          <template v-if="column.key === 'brand'">
+            <a-tag color="blue">{{ record.brand?.name }}</a-tag>
           </template>
-
-          <template v-if="column.key === 'price'">
-            <div>
-              <div class="font-semibold">
-                ${{ getMinPrice(record).toFixed(2) }} - ${{ getMaxPrice(record).toFixed(2) }}
-              </div>
-              <div class="text-sm text-gray-500">
-                {{ record.variants.length }} variants
-              </div>
-            </div>
+          <template v-if="column.key === 'variants_count'">
+            <a-badge :count="record.variants?.length || 0" />
           </template>
-
-          <template v-if="column.key === 'stock'">
-            <div>
-              <div class="font-semibold">{{ getTotalStock(record) }}</div>
-              <a-tag :color="getStockStatusColor(getTotalStock(record))" size="small">
-                {{ getStockStatus(getTotalStock(record)) }}
-              </a-tag>
-            </div>
+          <template v-if="column.key === 'created_at'">
+            <span>{{ formatDate(record.created_at) }}</span>
           </template>
-
-          <template v-if="column.key === 'status'">
-            <a-tag :color="getStatusColor(getStockStatus(getTotalStock(record)))">
-              {{ getStockStatus(getTotalStock(record)) }}
-            </a-tag>
-          </template>
-
           <template v-if="column.key === 'action'">
-            <div class="space-x-2">
-              <a-button type="primary" size="small" @click="editProduct(record.id)">
+            <div class="space-x-2" style="display: flex;">
+              <a-button type="primary" size="small" @click="editItem(record)">
                 Edit
               </a-button>
-              <a-popconfirm
-                title="Are you sure you want to delete this product?"
-                ok-text="Yes"
-                cancel-text="No"
-                @confirm="deleteProduct(record.id)"
-              >
-                <a-button danger size="small">Delete</a-button>
+              <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
+                @confirm="deleteItem(record.id)">
+                <a-button size="small" danger style="margin-left: 0.5rem;">
+                  Delete
+                </a-button>
               </a-popconfirm>
             </div>
           </template>
         </template>
       </a-table>
     </a-card>
+
+    <!-- Add/Edit Item Modal -->
+    <a-modal :title="modalMode === 'add' ? 'Add New Item' : 'Edit Item'" v-model:open="modalVisible"
+      :confirm-loading="confirmLoading" @ok="handleSubmit" @cancel="handleCancel" width="800px" :footer="null">
+      <a-form ref="formRef" :model="formState" :rules="formRules" layout="vertical">
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Item Name" name="name">
+              <a-input v-model:value="formState.name" placeholder="Enter item name" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Category">
+              <a-select v-model:value="selectedCategory" placeholder="Select category" :options="categoryOptions"
+                :loading="loading" allowClear />
+            </a-form-item>
+          </a-col>
+
+        </a-row>
+
+        <a-form-item label="Description" name="description">
+          <a-textarea v-model:value="formState.description" :rows="3" placeholder="Enter item description" />
+        </a-form-item>
+
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="Brand" >
+              <a-select v-model:value="selectedBrand" placeholder="Select brand" :options="brandOptions" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="Season" name="season_id">
+              <a-select v-model:value="selectedSeason" placeholder="Select season" :options="seasonOptions" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <!-- Variants Section -->
+        <a-divider>Product Variants</a-divider>
+        <div v-for="(variant, index) in formState.variants" :key="index" class="variant-form">
+          <a-card size="small" :title="`Variant ${index + 1}`" style="margin-bottom: 16px;">
+            <template #extra>
+              <a-button type="text" danger size="small" @click="removeVariant(index)"
+                v-if="formState.variants.length > 1">
+                Remove
+              </a-button>
+            </template>
+
+            <a-row :gutter="16">
+              <a-col :span="8">
+                <a-form-item :name="['variants', index, 'color_id']" label="Color">
+                  <a-select v-model:value="selectedColor" placeholder="Select color" :options="colorOptions" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="8">
+                <a-form-item :name="['variants', index, 'size_id']" label="Size">
+                  <a-select v-model:value="variant.size_id" placeholder="Select size" :options="sizeOptions" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="8">
+                <a-form-item :name="['variants', index, 'price']" label="Price">
+                  <a-input-number v-model:value="variant.price" :min="0" :precision="2" placeholder="0.00"
+                    style="width: 100%" :addon-before="'$'" />
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <a-row :gutter="16">
+              <a-col :span="12">
+                <a-form-item :name="['variants', index, 'quantity']" label="Quantity">
+                  <a-input-number v-model:value="variant.quantity" :min="0" placeholder="0" style="width: 100%" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item :name="['variants', index, 'image']" label="Image">
+                  <a-upload :file-list="variant.imageFileList || []"
+                    :before-upload="(file) => beforeUploadImage(file, index)" :max-count="1"
+                    accept="image/jpeg,image/png,image/jpg,image/webp" list-type="picture">
+                    <a-button size="small">
+                      <upload-outlined />
+                      Upload
+                    </a-button>
+                  </a-upload>
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </a-card>
+        </div>
+
+        <a-button type="dashed" @click="addVariant" block style="margin-bottom: 16px;">
+          <plus-outlined /> Add Variant
+        </a-button>
+
+        <div class="modal-footer" style="text-align: right; margin-top: 24px;">
+          <a-button @click="handleCancel" style="margin-right: 8px;">
+            Cancel
+          </a-button>
+          <a-button type="primary" @click="handleSubmit" :loading="confirmLoading">
+            {{ modalMode === 'add' ? 'Create Item' : 'Update Item' }}
+          </a-button>
+        </div>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-// Interfaces
-interface Color {
-  name: string
-  hex_code: string
-}
+import type { Item, ItemFormState, ItemResponse, ApiResponse} from "~/types/items/item";
+import type { Category, CategoryResponse } from "~/types/category/category";
+import type {  Brand, BrandResponse, } from "~/types/brand/brand";
+import type {  Season, SeasonResponse } from "~/types/season/season";
+import type {Size, SizeResponse} from "~/types/sizes/size"
+import type {Color, ColorResponse} from "~/types/colors/color"
 
-interface Size {
-  name: string
-  order: number
-  description: string
-}
+definePageMeta({
+  layout: 'default',
+})
 
-interface Discount {
-  name: string
-  value: string | number
-}
-
-interface Variant {
-  id: string
-  image: string
-  quantity: number
-  price: string
-  final_price: number
-  color: Color
-  size: Size
-  discount: Discount | null
-}
-
-interface Brand {
-  name: string
-}
-
-interface Item {
-  id: string
-  name: string
-  description: string
-  variants: Variant[]
-  brand: Brand
-}
-
-interface ItemResponse {
-  success: boolean
-  message?: string
-  data: Item[]
-}
-
-// Refs
+// Reactive variables
 const items = ref<Item[]>([])
-const isSpinning = ref(false)
-const searchQuery = ref('')
-const filterCategory = ref('')
-const filterStatus = ref('')
+const loading = ref(false)
 const error = ref<string | null>(null)
 
-const categories = ref([
-  { name: 'T-Shirts', slug: 't-shirts' },
-  { name: 'Jeans', slug: 'jeans' },
-  { name: 'Shoes', slug: 'shoes' }
-])
+// Modal state
+const modalVisible = ref(false)
+const modalMode = ref<'add' | 'edit'>('add')
+const confirmLoading = ref(false)
+const editingItemId = ref<string | null>(null)
 
-// Fetch logic using your custom helper
-const fetchItems = async () => {
-  isSpinning.value = true
+// Form state and reference
+const formRef = ref<any>()
+const formState = ref<ItemFormState>({
+  name: '',
+  description: '',
+  category_id: '',
+  brand_id: '',
+  season_id: '',
+  variants: [{
+    color_id: '',
+    size_id: '',
+    quantity: 0,
+    price: 0,
+    imageFileList: []
+  }]
+})
+
+
+// Reactive variables
+const categories = ref<Category[]>([])
+const brands = ref<Brand[]>([])
+const seasons = ref<Season[]>([])
+const sizes = ref<Size[]>([])
+const colors = ref<Color[]>([])
+
+const selectedCategory = ref<string | undefined>(undefined)
+const selectedBrand = ref<string | undefined>(undefined)
+const selectedSeason = ref<string | undefined>(undefined)
+const selectedColor = ref<string | undefined>(undefined)
+
+
+// Computed properties
+const categoryOptions = computed(() => 
+  categories.value.map(category => ({
+    label: category.name,
+    value: category.id
+  }))
+)
+
+const brandOptions = computed(() => 
+  brands.value.map(brand => ({
+    label: brand.name,
+    value: brand.id
+  }))
+)
+
+const seasonOptions = computed(() => 
+  seasons.value.map(season => ({
+    label: season.name,
+    value: season.id
+  }))
+)
+
+const colorOptions = computed(() => 
+  colors.value.map(color => ({
+    label: color.name,
+    value: color.id
+  }))
+)
+
+const sizeOptions = computed(() => 
+  sizes.value.map(size => ({
+    label: size.name,
+    value: size.id
+  }))
+)
+
+// Fetch categories
+const fetchCategories = async () => {
+  loading.value = true
   error.value = null
   try {
-    const { data } = await useFetchDataApi<ItemResponse>('/item')
+    const { data } = await useFetchDataApi<CategoryResponse>('/categories')
     if (data.value?.success && Array.isArray(data.value.data)) {
-      items.value = data.value.data
+      categories.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No items returned'
+      error.value = data.value?.message || 'No categories returned'
+      message.error(error.value)
     }
   } catch (err: any) {
     console.error('❌ Fetch Error:', err)
-    error.value = 'Fetch error'
+    error.value = 'Failed to fetch categories'
+    message.error(error.value)
   } finally {
-    isSpinning.value = false
+    loading.value = false
   }
+}
+
+// Fetch brands
+const fetchBrands = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await useFetchDataApi<BrandResponse>('/brands')
+    if (data.value?.status === 200 && Array.isArray(data.value.data)) {
+      brands.value = data.value.data
+    } else {
+      error.value = data.value?.message || 'No brands returned'
+      message.error(error.value)
+    }
+  } catch (err: any) {
+    console.error('❌ Fetch Error:', err)
+    error.value = 'Failed to fetch brands'
+    message.error(error.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch seasons
+const fetchSeasons = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await useFetchDataApi<SeasonResponse>('/seasons')
+    if (data.value?.status === 200 && Array.isArray(data.value.data)) {
+      seasons.value = data.value.data
+    } else {
+      error.value = data.value?.message || 'No seasons returned'
+      message.error(error.value)
+    }
+  } catch (err: any) {
+    console.error('❌ Fetch Error:', err)
+    error.value = 'Failed to fetch seasons'
+    message.error(error.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch colors
+const fetchColors = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await useFetchDataApi<ColorResponse>('/color')
+    if (data.value?.status === 'success' && Array.isArray(data.value.data)) {
+      colors.value = data.value.data
+    } else {
+      error.value = data.value?.message || 'No colors returned'
+      message.error(error.value)
+    }
+  } catch (err: any) {
+    console.error('❌ Fetch Error:', err)
+    error.value = 'Failed to fetch colors'
+    message.error(error.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Fetch sizes
+const fetchSizes = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await useFetchDataApi<SizeResponse>('/size')
+    if (data.value?.status === 200 && Array.isArray(data.value.data)) {
+      sizes.value = data.value.data
+    } else {
+      error.value = data.value?.message || 'No sizes returned'
+      message.error(error.value)
+    }
+  } catch (err: any) {
+    console.error('❌ Fetch Error:', err)
+    error.value = 'Failed to fetch sizes'
+    message.error(error.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+
+// Form validation rules
+const formRules = {
+  name: [
+    { required: true, message: 'Please enter item name' },
+    { min: 2, message: 'Item name must be at least 2 characters' }
+  ],
+  description: [
+    { required: true, message: 'Please enter description' }
+  ],
+  category_id: [
+    { required: true, message: 'Please select a category' }
+  ],
+  brand_id: [
+    { required: true, message: 'Please select a brand' }
+  ],
+  season_id: [
+    { required: true, message: 'Please select a season' }
+  ]
 }
 
 // Table columns
 const columns = [
   {
-    title: 'Product',
-    dataIndex: 'name',
+    title: 'Name',
     key: 'name',
-    width: 300,
-  },
-  {
-    title: 'Variants',
-    dataIndex: 'variants',
-    key: 'variants',
+    dataIndex: 'name',
     width: 200,
   },
   {
-    title: 'Price Range',
-    dataIndex: 'price',
-    key: 'price',
+    title: 'Description',
+    dataIndex: 'description',
+    key: 'description',
+    ellipsis: true,
+  },
+  {
+    title: 'Brand',
+    key: 'brand',
+    width: 120,
+  },
+  {
+    title: 'Variants',
+    key: 'variants_count',
+    width: 100,
+  },
+  {
+    title: 'Created At',
+    key: 'created_at',
     width: 150,
-  },
-  {
-    title: 'Stock',
-    dataIndex: 'stock',
-    key: 'stock',
-    width: 120,
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    width: 120,
   },
   {
     title: 'Action',
@@ -303,97 +425,306 @@ const columns = [
   },
 ]
 
-// Use the original items array as table data
-const tableData = computed(() => items.value)
+// Variant table columns
+const variantColumns = [
+  {
+    title: 'Image',
+    key: 'image',
+    width: 60,
+  },
+  {
+    title: 'Color',
+    key: 'color',
+    width: 100,
+  },
+  {
+    title: 'Size',
+    key: 'size',
+    width: 80,
+  },
+  {
+    title: 'Price',
+    key: 'price',
+    width: 100,
+  },
+  {
+    title: 'Quantity',
+    dataIndex: 'quantity',
+    key: 'quantity',
+    width: 100,
+  },
+]
 
-// Helper functions to compute values on-demand
-const getMinPrice = (product: any): number => {
-  const prices = product.variants.map((v: any) => parseFloat(v.final_price.toString()))
-  return Math.min(...prices)
+// File upload handling
+const beforeUploadImage = (file: File, variantIndex: number) => {
+  const isImage = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'].includes(file.type);
+  const isLt5M = file.size / 1024 / 1024 < 5;
+
+  if (!isImage) {
+    message.error('You can only upload JPEG, PNG, JPG, or WEBP files!');
+    return false;
+  }
+  if (!isLt5M) {
+    message.error('Image must be smaller than 5MB!');
+    return false;
+  }
+
+  formState.value.variants[variantIndex].image = file;
+  return false;
 }
 
-const getMaxPrice = (product: any): number => {
-  const prices = product.variants.map((v: any) => parseFloat(v.final_price.toString()))
-  return Math.max(...prices)
+// Variant management
+const addVariant = () => {
+  formState.value.variants.push({
+    color_id: '',
+    size_id: '',
+    quantity: 0,
+    price: 0,
+    imageFileList: []
+  });
 }
 
-const getTotalStock = (product: any): number => {
-  return product.variants.reduce((sum: number, v: any) => sum + v.quantity, 0)
+const removeVariant = (index: number) => {
+  formState.value.variants.splice(index, 1);
 }
 
-const getMainImage = (product: any): string => {
-  return product.variants[0]?.image || ''
-}
-
-// Stock utilities
-const getStockStatus = (stock: number): string => {
-  if (stock === 0) return 'out-of-stock'
-  if (stock < 10) return 'low-stock'
-  return 'in-stock'
-}
-
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case 'in-stock': return 'green'
-    case 'low-stock': return 'orange'
-    case 'out-of-stock': return 'red'
-    default: return 'default'
+// Fetch items
+const fetchItems = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const { data } = await useFetchDataApi<ItemResponse>('/item')
+    if (data.value?.data && Array.isArray(data.value.data)) {
+      items.value = data.value.data
+    } else {
+      error.value = data.value?.message || 'No items returned'
+      message.error(error.value)
+    }
+  } catch (err: any) {
+    console.error('❌ Fetch Error:', err)
+    error.value = 'Failed to fetch items'
+    message.error(error.value)
+  } finally {
+    loading.value = false
   }
 }
 
-const getStockStatusColor = (stock: number): string => {
-  if (stock === 0) return 'red'
-  if (stock < 10) return 'orange'
-  return 'green'
+// Modal functions
+const showModal = () => {
+  modalMode.value = 'add'
+  modalVisible.value = true
+  resetForm()
 }
 
-// Event Handlers
-const onSearch = (value: string) => {
-  console.log('Search:', value)
+const handleCancel = () => {
+  modalVisible.value = false
+  resetForm()
 }
 
-const editProduct = (productId: string) => {
-  console.log('Edit product:', productId)
-  // Navigate to edit page or open modal
+const resetForm = () => {
+  formState.value = {
+    name: '',
+    description: '',
+    category_id: '',
+    brand_id: '',
+    season_id: '',
+    variants: [{
+      color_id: '',
+      size_id: '',
+      quantity: 0,
+      price: 0,
+      imageFileList: []
+    }]
+  }
+  editingItemId.value = null
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
 }
 
-const deleteProduct = (productId: string) => {
-  console.log('Delete product:', productId)
+// Edit item function
+const editItem = (record: Record<string, any>) => {
+  const item = record as Item
+  modalMode.value = 'edit'
+  modalVisible.value = true
+  editingItemId.value = item.id
+
+  formState.value = {
+    name: item.name,
+    description: item.description || '',
+    category_id: item.category_id,
+    brand_id: item.brand_id,
+    season_id: item.season_id,
+    variants: item.variants.map(variant => ({
+      ...variant,
+      imageFileList: variant.image ? [{
+        uid: variant.id || Math.random().toString(),
+        name: 'image.jpg',
+        status: 'done',
+        url: variant.image as string
+      }] : []
+    }))
+  }
 }
 
-// On mount
-onMounted(() => {
-  fetchItems()
+// Handle form submission
+const handleSubmit = async () => {
+  try {
+    await formRef.value.validate()
+    confirmLoading.value = true
+
+    if (modalMode.value === 'add') {
+      await createItem()
+    } else {
+      await updateItem()
+    }
+
+    modalVisible.value = false
+    resetForm()
+    await fetchItems()
+
+  } catch (error) {
+    console.error('Form validation failed:', error)
+  } finally {
+    confirmLoading.value = false
+  }
+}
+
+// Create item function
+const createItem = async () => {
+  try {
+    const formData = new FormData()
+    formData.append('name', formState.value.name)
+    formData.append('description', formState.value.description)
+    formData.append('category_id', formState.value.category_id)
+    formData.append('brand_id', formState.value.brand_id)
+    formData.append('season_id', formState.value.season_id)
+
+    // Add variants data
+    formState.value.variants.forEach((variant, index) => {
+      formData.append(`variants[${index}][color_id]`, variant.color_id)
+      formData.append(`variants[${index}][size_id]`, variant.size_id)
+      formData.append(`variants[${index}][quantity]`, String(variant.quantity))
+      formData.append(`variants[${index}][price]`, String(variant.price))
+      if (variant.image instanceof File) {
+        formData.append(`variants[${index}][image]`, variant.image)
+      }
+    })
+
+    const { data } = await useFetchDataApi<ApiResponse>('/item', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (data.value?.message) {
+      message.success(data.value.message)
+    } else {
+      message.success('Item created successfully')
+    }
+  } catch (error: any) {
+    console.error('❌ Create Error:', error)
+    message.error(error.message || 'Failed to create item')
+    throw error
+  }
+}
+
+// Update item function
+const updateItem = async () => {
+  if (!editingItemId.value) return
+
+  try {
+    const formData = new FormData()
+    formData.append('_method', 'PUT')
+    formData.append('name', formState.value.name)
+    formData.append('description', formState.value.description)
+    formData.append('category_id', formState.value.category_id)
+    formData.append('brand_id', formState.value.brand_id)
+    formData.append('season_id', formState.value.season_id)
+
+    // Add variants data
+    formState.value.variants.forEach((variant, index) => {
+      formData.append(`variants[${index}][color_id]`, variant.color_id)
+      formData.append(`variants[${index}][size_id]`, variant.size_id)
+      formData.append(`variants[${index}][quantity]`, String(variant.quantity))
+      formData.append(`variants[${index}][price]`, String(variant.price))
+      if (variant.image instanceof File) {
+        formData.append(`variants[${index}][image]`, variant.image)
+      }
+    })
+
+    const { data } = await useFetchDataApi<ApiResponse>(`/item/${editingItemId.value}`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (data.value?.message) {
+      message.success(data.value.message)
+    } else {
+      message.success('Item updated successfully')
+    }
+  } catch (error: any) {
+    console.error('❌ Update Error:', error)
+    message.error(error.message || 'Failed to update item')
+    throw error
+  }
+}
+
+// Delete item function
+const deleteItem = async (itemId: string) => {
+  try {
+    const { data } = await useFetchDataApi<ApiResponse>(`/item/${itemId}`, {
+      method: 'DELETE'
+    })
+
+    if (data.value?.message) {
+      message.success(data.value.message)
+    } else {
+      message.success('Item deleted successfully')
+    }
+    await fetchItems()
+  } catch (error: any) {
+    console.error('❌ Delete Error:', error)
+    message.error(error.message || 'Failed to delete item')
+  }
+}
+
+// Format date helper
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// Initialize
+onMounted(async () => {
+  await fetchItems()
+  await fetchCategories()
+  await fetchBrands()
+  await fetchSeasons()
+  await fetchColors()
+  await fetchSizes()
 })
 </script>
 
 <style scoped>
-.space-x-2 > * + * {
+.space-x-2>*+* {
   margin-left: 0.5rem;
 }
-.space-x-3 > * + * {
-  margin-left: 0.75rem;
+
+.variant-form {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #fafafa;
 }
-.grid {
-  display: grid;
-}
-.grid-cols-1 {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-@media (min-width: 768px) {
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1024px) {
-  .lg\:grid-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-.gap-1 {
-  gap: 0.25rem;
-}
-.gap-4 {
-  gap: 1rem;
+
+.modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
 }
 </style>

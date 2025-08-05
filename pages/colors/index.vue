@@ -132,34 +132,7 @@
 </template>
 
 <script setup lang="ts">
-// Types
-interface Color {
-  id: string
-  name: string
-  hex_code: string
-  description: string
-  created_at: string
-  updated_at: string
-}
-
-interface ColorResponse {
-  status: string 
-  message: string
-  data: Color[]
-}
-
-
-interface ColorFormState {
-  name: string
-  hex_code: string
-  description: string
-}
-
-interface ApiResponse {
-  status: string 
-  message: string
-  data?: any
-}
+import type {Color, ColorFormState, ColorResponse, ApiResponse} from "~/types/colors/color"
 
 
 definePageMeta({

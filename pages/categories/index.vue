@@ -110,50 +110,7 @@
 </template>
 
 <script setup lang="ts">
-// Types
-interface CategoryGroup {
-  id: string
-  name: string
-  slug: string
-  created_at: string
-  updated_at: string
-}
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-  description: string
-  category_group_id: string
-  created_at: string
-  updated_at: string
-  group?: CategoryGroup
-}
-
-interface CategoryResponse {
-  success: boolean
-  message: string
-  data: Category[]
-}
-
-interface CategoryGroupResponse {
-  success: boolean
-  message: string
-  data: CategoryGroup[]
-}
-
-interface CategoryFormState {
-  name: string
-  slug: string
-  description: string
-  category_group_id: string
-}
-
-interface ApiResponse {
-  success: boolean
-  message: string
-  data?: any
-}
+import type { Category, CategoryGroup, CategoryFormState, CategoryResponse, CategoryGroupResponse, ApiResponse} from "~/types/category/category";
 
 definePageMeta({
   layout: 'default',
