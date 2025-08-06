@@ -109,35 +109,7 @@
 </template>
 
 <script setup lang="ts">
-// Types
-interface Season {
-  id: string
-  name: string
-  slug: string
-  description: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-interface SeasonResponse {
-  status: number
-  message: string
-  data: Season[]
-}
-
-interface SeasonFormState {
-  name: string
-  slug: string
-  description: string
-  is_active: boolean
-}
-
-interface ApiResponse {
-  status?: number
-  message: string
-  data?: any
-}
+import type {  Season, SeasonFormState, SeasonResponse, ApiResponse } from "~/types/season/season";
 
 definePageMeta({
   layout: 'default',

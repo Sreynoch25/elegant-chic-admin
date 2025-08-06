@@ -92,34 +92,7 @@
 </template>
 
 <script setup lang="ts">
-// Types
-interface Size {
-  id: string
-  name: string
-  order: number
-  description: string
-  size_group_id: string
-  created_at: string
-  updated_at: string
-}
-
-interface SizeResponse {
-  status: number
-  message: string
-  data: Size[]
-}
-
-interface SizeFormState {
-  name: string
-  description: string
-  size_group_id: string
-}
-
-interface ApiResponse {
-  status?: number
-  message: string
-  data?: any
-}
+import type {Size, SizeFormState, SizeResponse, ApiResponse} from "~/types/sizes/size"
 
 definePageMeta({
   layout: 'default',

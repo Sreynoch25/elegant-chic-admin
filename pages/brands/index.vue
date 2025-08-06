@@ -142,38 +142,7 @@
 </template>
 
 <script setup lang="ts">
-// Types
-interface Brand {
-  id: string
-  name: string
-  slug: string
-  description: string
-  logo_url: string
-  is_featured: number
-  created_at: string
-  updated_at: string
-}
-
-interface BrandResponse {
-  status: number
-  message: string
-  data: Brand[]
-}
-
-interface BrandFormState {
-  name: string
-  slug: string
-  description: string
-  logo_url: string
-  logo_file: File | null
-  is_featured: boolean
-}
-
-interface ApiResponse {
-  status?: number
-  message: string
-  data?: any
-}
+import type { BrandFormState, Brand, BrandResponse, ApiResponse} from "~/types/brand/brand";
 
 definePageMeta({
   layout: 'default',
