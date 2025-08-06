@@ -79,12 +79,11 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="Category">
-              <a-select v-model:value="selectedCategory" placeholder="Select category" :options="categoryOptions"
+            <a-form-item label="Category" name="category_id">
+              <a-select v-model:value="formState.category_id" placeholder="Select category" :options="categoryOptions"
                 :loading="loading" allowClear />
             </a-form-item>
           </a-col>
-
         </a-row>
 
         <a-form-item label="Description" name="description">
@@ -93,13 +92,13 @@
 
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="Brand" >
-              <a-select v-model:value="selectedBrand" placeholder="Select brand" :options="brandOptions" />
+            <a-form-item label="Brand" name="brand_id">
+              <a-select v-model:value="formState.brand_id" placeholder="Select brand" :options="brandOptions" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="Season" name="season_id">
-              <a-select v-model:value="selectedSeason" placeholder="Select season" :options="seasonOptions" />
+              <a-select v-model:value="formState.season_id" placeholder="Select season" :options="seasonOptions" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -118,7 +117,7 @@
             <a-row :gutter="16">
               <a-col :span="8">
                 <a-form-item :name="['variants', index, 'color_id']" label="Color">
-                  <a-select v-model:value="selectedColor" placeholder="Select color" :options="colorOptions" />
+                  <a-select v-model:value="variant.color_id" placeholder="Select color" :options="colorOptions" />
                 </a-form-item>
               </a-col>
               <a-col :span="8">
@@ -213,19 +212,12 @@ const formState = ref<ItemFormState>({
   }]
 })
 
-
-// Reactive variables
+// Reactive variables for dropdown data
 const categories = ref<Category[]>([])
 const brands = ref<Brand[]>([])
 const seasons = ref<Season[]>([])
 const sizes = ref<Size[]>([])
 const colors = ref<Color[]>([])
-
-const selectedCategory = ref<string | undefined>(undefined)
-const selectedBrand = ref<string | undefined>(undefined)
-const selectedSeason = ref<string | undefined>(undefined)
-const selectedColor = ref<string | undefined>(undefined)
-
 
 // Computed properties
 const categoryOptions = computed(() => 
@@ -265,109 +257,88 @@ const sizeOptions = computed(() =>
 
 // Fetch categories
 const fetchCategories = async () => {
-  loading.value = true
-  error.value = null
   try {
     const { data } = await useFetchDataApi<CategoryResponse>('/categories')
     if (data.value?.success && Array.isArray(data.value.data)) {
       categories.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No categories returned'
-      message.error(error.value)
+      const errorMsg = data.value?.message || 'No categories returned'
+      console.error('Categories fetch error:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch categories'
-    message.error(error.value)
-  } finally {
-    loading.value = false
+    console.error('❌ Categories Fetch Error:', err)
+    message.error('Failed to fetch categories')
   }
 }
 
 // Fetch brands
 const fetchBrands = async () => {
-  loading.value = true
-  error.value = null
   try {
     const { data } = await useFetchDataApi<BrandResponse>('/brands')
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
       brands.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No brands returned'
-      message.error(error.value)
+      const errorMsg = data.value?.message || 'No brands returned'
+      console.error('Brands fetch error:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch brands'
-    message.error(error.value)
-  } finally {
-    loading.value = false
+    console.error('❌ Brands Fetch Error:', err)
+    message.error('Failed to fetch brands')
   }
 }
 
 // Fetch seasons
 const fetchSeasons = async () => {
-  loading.value = true
-  error.value = null
   try {
     const { data } = await useFetchDataApi<SeasonResponse>('/seasons')
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
       seasons.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No seasons returned'
-      message.error(error.value)
+      const errorMsg = data.value?.message || 'No seasons returned'
+      console.error('Seasons fetch error:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch seasons'
-    message.error(error.value)
-  } finally {
-    loading.value = false
+    console.error('❌ Seasons Fetch Error:', err)
+    message.error('Failed to fetch seasons')
   }
 }
 
 // Fetch colors
 const fetchColors = async () => {
-  loading.value = true
-  error.value = null
   try {
     const { data } = await useFetchDataApi<ColorResponse>('/color')
     if (data.value?.status === 'success' && Array.isArray(data.value.data)) {
       colors.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No colors returned'
-      message.error(error.value)
+      const errorMsg = data.value?.message || 'No colors returned'
+      console.error('Colors fetch error:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch colors'
-    message.error(error.value)
-  } finally {
-    loading.value = false
+    console.error('❌ Colors Fetch Error:', err)
+    message.error('Failed to fetch colors')
   }
 }
 
 // Fetch sizes
 const fetchSizes = async () => {
-  loading.value = true
-  error.value = null
   try {
     const { data } = await useFetchDataApi<SizeResponse>('/size')
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
       sizes.value = data.value.data
     } else {
-      error.value = data.value?.message || 'No sizes returned'
-      message.error(error.value)
+      const errorMsg = data.value?.message || 'No sizes returned'
+      console.error('Sizes fetch error:', errorMsg)
+      message.error(errorMsg)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch sizes'
-    message.error(error.value)
-  } finally {
-    loading.value = false
+    console.error('❌ Sizes Fetch Error:', err)
+    message.error('Failed to fetch sizes')
   }
 }
-
 
 // Form validation rules
 const formRules = {
@@ -469,8 +440,15 @@ const beforeUploadImage = (file: File, variantIndex: number) => {
     return false;
   }
 
+  // Store the file and update the file list for display
   formState.value.variants[variantIndex].image = file;
-  return false;
+  formState.value.variants[variantIndex].imageFileList = [{
+    uid: file.name + Date.now(),
+    name: file.name,
+    status: 'done',
+  }];
+  
+  return false; // Prevent automatic upload
 }
 
 // Variant management
@@ -501,7 +479,7 @@ const fetchItems = async () => {
       message.error(error.value)
     }
   } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
+    console.error('❌ Items Fetch Error:', err)
     error.value = 'Failed to fetch items'
     message.error(error.value)
   } finally {
@@ -570,7 +548,36 @@ const editItem = (record: Record<string, any>) => {
 // Handle form submission
 const handleSubmit = async () => {
   try {
+    // Validate basic form fields
     await formRef.value.validate()
+    
+    // Validate variants
+    if (!formState.value.variants || formState.value.variants.length === 0) {
+      message.error('Please add at least one variant')
+      return
+    }
+
+    // Validate each variant
+    for (let i = 0; i < formState.value.variants.length; i++) {
+      const variant = formState.value.variants[i]
+      if (!variant.color_id) {
+        message.error(`Please select color for variant ${i + 1}`)
+        return
+      }
+      if (!variant.size_id) {
+        message.error(`Please select size for variant ${i + 1}`)
+        return
+      }
+      if (!variant.price || variant.price <= 0) {
+        message.error(`Please enter valid price for variant ${i + 1}`)
+        return
+      }
+      if (variant.quantity < 0) {
+        message.error(`Please enter valid quantity for variant ${i + 1}`)
+        return
+      }
+    }
+
     confirmLoading.value = true
 
     if (modalMode.value === 'add') {
@@ -594,6 +601,8 @@ const handleSubmit = async () => {
 const createItem = async () => {
   try {
     const formData = new FormData()
+    
+    // Add basic item data
     formData.append('name', formState.value.name)
     formData.append('description', formState.value.description)
     formData.append('category_id', formState.value.category_id)
@@ -606,9 +615,15 @@ const createItem = async () => {
       formData.append(`variants[${index}][size_id]`, variant.size_id)
       formData.append(`variants[${index}][quantity]`, String(variant.quantity))
       formData.append(`variants[${index}][price]`, String(variant.price))
+      
       if (variant.image instanceof File) {
         formData.append(`variants[${index}][image]`, variant.image)
       }
+    })
+
+    console.log('Creating item with data:', {
+      name: formState.value.name,
+      variants: formState.value.variants
     })
 
     const { data } = await useFetchDataApi<ApiResponse>('/item', {
@@ -641,7 +656,6 @@ const updateItem = async () => {
     formData.append('brand_id', formState.value.brand_id)
     formData.append('season_id', formState.value.season_id)
 
-    // Add variants data
     formState.value.variants.forEach((variant, index) => {
       formData.append(`variants[${index}][color_id]`, variant.color_id)
       formData.append(`variants[${index}][size_id]`, variant.size_id)
@@ -663,7 +677,6 @@ const updateItem = async () => {
       message.success('Item updated successfully')
     }
   } catch (error: any) {
-    console.error('❌ Update Error:', error)
     message.error(error.message || 'Failed to update item')
     throw error
   }
@@ -701,12 +714,14 @@ const formatDate = (dateString: string) => {
 
 // Initialize
 onMounted(async () => {
-  await fetchItems()
-  await fetchCategories()
-  await fetchBrands()
-  await fetchSeasons()
-  await fetchColors()
-  await fetchSizes()
+  await Promise.all([
+    fetchItems(),
+    fetchCategories(),
+    fetchBrands(),
+    fetchSeasons(),
+    fetchColors(),
+    fetchSizes()
+  ])
 })
 </script>
 
