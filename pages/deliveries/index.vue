@@ -388,7 +388,7 @@ const updateDelivery = async () => {
     }
 
     const { data } = await useFetchDataApi<ApiResponse>(`/deliveries/${editingDeliveryId.value}`, {
-      method: 'PUT',
+      method: 'POST',
       body: formData,
     })
 

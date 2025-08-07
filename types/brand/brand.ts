@@ -20,7 +20,6 @@ export interface BrandFormState {
   slug: string
   description: string
   logo_url: string
-  logo_file: File | null
   is_featured: boolean
 }
 
