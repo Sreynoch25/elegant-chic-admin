@@ -108,9 +108,6 @@
           <a-menu-item key="products-list">
             <NuxtLink to="/products">All Products</NuxtLink>
           </a-menu-item>
-          <a-menu-item key="products-add">
-            <NuxtLink to="/products/add">Add Product</NuxtLink>
-          </a-menu-item>
         </a-sub-menu>
 
         <!-- Orders submenu -->

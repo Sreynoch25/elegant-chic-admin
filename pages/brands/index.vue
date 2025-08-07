@@ -11,21 +11,11 @@
     </a-page-header>
 
     <a-card>
-      <a-table 
-        :columns="columns" 
-        :data-source="brands" 
-        :loading="loading" 
-        row-key="id"
-      >
+      <a-table :columns="columns" :data-source="brands" :loading="loading" row-key="id">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'logo_url'">
-            <a-image 
-              :src="record.logo_url" 
-              :width="50" 
-              :height="50" 
-              style="object-fit: cover; border-radius: 4px;"
-              :preview="true"
-            />
+            <a-image :src="record.logo_url" :width="50" :height="50" style="object-fit: cover; border-radius: 4px;"
+              :preview="true" />
           </template>
           <template v-if="column.key === 'is_featured'">
             <a-tag :color="record.is_featured ? 'green' : 'default'">
@@ -40,12 +30,8 @@
               <a-button type="primary" size="small" @click="editBrand(record)">
                 Edit
               </a-button>
-              <a-popconfirm 
-                title="Are you sure you want to delete this brand?" 
-                ok-text="Yes"
-                cancel-text="No" 
-                @confirm="deleteBrand(record.id)"
-              >
+              <a-popconfirm title="Are you sure you want to delete this brand?" ok-text="Yes" cancel-text="No"
+                @confirm="deleteBrand(record.id)">
                 <a-button size="small" style="margin-left: 0.5rem;">
                   Delete
                 </a-button>
@@ -57,62 +43,27 @@
     </a-card>
 
     <!-- Add/Edit Brand Modal -->
-    <a-modal 
-      :title="modalMode === 'add' ? 'Add New Brand' : 'Edit Brand'" 
-      v-model:open="modalVisible"
-      :confirm-loading="confirmLoading" 
-      @ok="handleSubmit" 
-      @cancel="handleCancel"
-    >
-      <a-form ref="formRef" :model="formState" layout="vertical">
-        <a-form-item 
-          label="Brand Name" 
-          name="name"
-        >
-          <a-input 
-            v-model:value="formState.name" 
-            placeholder="Enter brand name"
-            @input="generateSlug"
-          />
+    <a-modal :title="modalMode === 'add' ? 'Add New Brand' : 'Edit Brand'" v-model:open="modalVisible"
+      :confirm-loading="confirmLoading" @ok="handleSubmit" @cancel="handleCancel">
+      <a-form ref="formRef" :model="formState" :rules="formRules" layout="vertical">
+        <a-form-item label="Brand Name" name="name">
+          <a-input v-model:value="formState.name" placeholder="Enter brand name" @input="generateSlug" />
         </a-form-item>
-        
-        <a-form-item 
-          label="Slug" 
-          name="slug"
-        >
-          <a-input 
-            v-model:value="formState.slug" 
-            placeholder="Enter brand slug" 
-          />
+
+        <a-form-item label="Slug" name="slug">
+          <a-input v-model:value="formState.slug" placeholder="Enter brand slug" />
           <div class="text-gray-500 text-sm">
             Used in URLs. Will be auto-generated if left empty.
           </div>
         </a-form-item>
-        
-        <a-form-item 
-          label="Description" 
-          name="description"
-        >
-          <a-textarea 
-            v-model:value="formState.description" 
-            :rows="3"
-            placeholder="Enter brand description" 
-          />
+
+        <a-form-item label="Description" name="description">
+          <a-textarea v-model:value="formState.description" :rows="3" placeholder="Enter brand description" />
         </a-form-item>
-        
-        <a-form-item 
-          label="Brand Logo" 
-          name="logo"
-        >
-          <a-upload
-            v-model:file-list="logoFileList"
-            :before-upload="beforeLogoUpload"
-            :custom-request="customRequest"
-            @change="handleLogoChange"
-            list-type="picture-card"
-            :max-count="1"
-            accept="image/*"
-          >
+
+        <a-form-item label="Brand Logo" name="logo">
+          <a-upload v-model:file-list="logoFileList" :before-upload="beforeLogoUpload" :custom-request="customRequest"
+            @change="handleLogoChange" list-type="picture-card" :max-count="1" accept="image/*">
             <div v-if="logoFileList.length < 1">
               <plus-outlined />
               <div style="margin-top: 8px">Upload Logo</div>
@@ -122,16 +73,9 @@
             Upload a brand logo image. Maximum file size: 2MB.
           </div>
         </a-form-item>
-        
-        <a-form-item 
-          label="Featured" 
-          name="is_featured"
-        >
-          <a-switch 
-            v-model:checked="formState.is_featured"
-            checked-children="Yes"
-            un-checked-children="No"
-          />
+
+        <a-form-item label="Featured" name="is_featured">
+          <a-switch v-model:checked="formState.is_featured" checked-children="Yes" un-checked-children="No" />
           <div class="text-gray-500 text-sm">
             Featured brands appear prominently on the site.
           </div>
@@ -142,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BrandFormState, Brand, BrandResponse, ApiResponse} from "~/types/brand/brand";
+import type { BrandFormState, Brand, BrandResponse, ApiResponse } from "~/types/brand/brand";
 
 definePageMeta({
   layout: 'default',
@@ -166,12 +110,12 @@ const formState = ref<BrandFormState>({
   slug: '',
   description: '',
   logo_url: '',
-  logo_file: null,
   is_featured: false
 })
 
 // File upload state
 const logoFileList = ref<any[]>([])
+const uploadedFile = ref<File | null>(null)
 
 // Form validation rules
 const formRules = {
@@ -230,12 +174,13 @@ const columns = [
 // File upload handling
 const handleLogoChange = (info: any) => {
   logoFileList.value = [...info.fileList]
-  
+
   if (info.file.status === 'done') {
     message.success(`${info.file.name} file uploaded successfully`)
-    formState.value.logo_file = info.file.originFileObj
+    uploadedFile.value = info.file.originFileObj || info.file
   } else if (info.file.status === 'error') {
     message.error(`${info.file.name} file upload failed`)
+    uploadedFile.value = null
   }
 }
 
@@ -245,15 +190,15 @@ const beforeLogoUpload = (file: File) => {
     message.error('You can only upload image files!')
     return false
   }
-  
+
   const isLt2M = file.size / 1024 / 1024 < 2
   if (!isLt2M) {
     message.error('Image must be smaller than 2MB!')
     return false
   }
-  
+
   // Store the file for later use
-  formState.value.logo_file = file
+  uploadedFile.value = file
   return false // Prevent automatic upload
 }
 
@@ -303,11 +248,11 @@ const resetForm = () => {
     slug: '',
     description: '',
     logo_url: '',
-    logo_file: null,
     is_featured: false
   }
   editingBrandId.value = null
   logoFileList.value = []
+  uploadedFile.value = null
   if (formRef.value) {
     formRef.value.resetFields()
   }
@@ -319,17 +264,16 @@ const editBrand = (record: Record<string, any>): void => {
   modalMode.value = 'edit'
   modalVisible.value = true
   editingBrandId.value = brand.id
-  
+
   // Populate form with existing data
   formState.value = {
     name: brand.name,
     slug: brand.slug,
     description: brand.description || '',
     logo_url: brand.logo_url || '',
-    logo_file: null,
     is_featured: brand.is_featured === 1
   }
-  
+
   // Set up file list for existing logo
   if (brand.logo_url) {
     logoFileList.value = [{
@@ -339,6 +283,9 @@ const editBrand = (record: Record<string, any>): void => {
       url: brand.logo_url,
     }]
   }
+
+  // Reset uploaded file since we're editing
+  uploadedFile.value = null
 }
 
 // Generate slug from name
@@ -358,17 +305,17 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     confirmLoading.value = true
-    
+
     if (modalMode.value === 'add') {
       await createBrand()
     } else {
       await updateBrand()
     }
-    
+
     modalVisible.value = false
     resetForm()
     await fetchBrands()
-    
+
   } catch (error) {
     console.error('Form validation failed:', error)
   } finally {
@@ -384,11 +331,9 @@ const createBrand = async () => {
     formData.append('slug', formState.value.slug)
     formData.append('description', formState.value.description)
     
-    // Handle file upload for logo
-    if (formState.value.logo_file) {
-      formData.append('logo', formState.value.logo_file)
-    } else if (formState.value.logo_url) {
-      formData.append('logo_url', formState.value.logo_url)
+    // Add the uploaded file if it exists
+    if (uploadedFile.value) {
+      formData.append('logo_url', uploadedFile.value)
     }
     
     formData.append('is_featured', formState.value.is_featured ? '1' : '0')
@@ -397,7 +342,7 @@ const createBrand = async () => {
       method: 'POST',
       body: formData
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -413,28 +358,26 @@ const createBrand = async () => {
 // Update brand function
 const updateBrand = async () => {
   if (!editingBrandId.value) return
-  
+
   try {
     const formData = new FormData()
     formData.append('_method', 'PUT')
     formData.append('name', formState.value.name)
     formData.append('slug', formState.value.slug)
     formData.append('description', formState.value.description)
-    
-    // Handle file upload for logo
-    if (formState.value.logo_file) {
-      formData.append('logo', formState.value.logo_file)
-    } else if (formState.value.logo_url) {
-      formData.append('logo_url', formState.value.logo_url)
+
+    // Add the uploaded file if a new one was selected
+    if (uploadedFile.value) {
+      formData.append('logo_url', uploadedFile.value)
     }
-    
+
     formData.append('is_featured', formState.value.is_featured ? '1' : '0')
 
     const { data } = await useFetchDataApi<ApiResponse>(`/brands/${editingBrandId.value}`, {
-      method: 'POST', // Using POST with _method override
+      method: 'POST', 
       body: formData
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -453,7 +396,7 @@ const deleteBrand = async (brandId: string) => {
     const { data } = await useFetchDataApi<ApiResponse>(`/brands/${brandId}`, {
       method: 'DELETE'
     })
-    
+
     if (data.value?.message) {
       message.success(data.value.message)
     } else {
@@ -484,7 +427,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.space-x-2 > * + * {
+.space-x-2>*+* {
   margin-left: 0.5rem;
 }
 
