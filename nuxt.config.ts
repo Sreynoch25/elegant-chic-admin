@@ -9,11 +9,7 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
-  modules: [
-    "@ant-design-vue/nuxt",
-    "@nuxtjs/google-fonts",
-    "@pinia/nuxt",
-  ],  runtimeConfig: {
+  modules: ["@ant-design-vue/nuxt", "@nuxtjs/google-fonts", "@pinia/nuxt", "dayjs-nuxt"],  runtimeConfig: {
 
   public: {
       apiEndPoint: process.env.NUXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000',

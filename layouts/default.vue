@@ -96,9 +96,6 @@
           <a-menu-item key="users-list">
             <NuxtLink to="/users">View All Users</NuxtLink>
           </a-menu-item>
-          <a-menu-item key="users-add">
-            <NuxtLink to="/users/add">Add New User</NuxtLink>
-          </a-menu-item>
         </a-sub-menu>
 
         <!-- Products submenu -->
@@ -116,12 +113,6 @@
           <template #title>Orders</template>
           <a-menu-item key="orders-list">
             <NuxtLink to="/orders">All Orders</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="orders-pending">
-            <NuxtLink to="/orders/pending">Pending Orders</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="orders-complete">
-            <NuxtLink to="/orders/complete">Complete Orders</NuxtLink>
           </a-menu-item>
         </a-sub-menu>
 
