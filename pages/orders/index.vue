@@ -170,7 +170,7 @@
                     <CheckOutlined /> Confirm Order
                   </a-menu-item>
                   <a-menu-item key="ship" v-if="record.order_status === 'confirmed'">
-                    <TruckOutlined /> Mark as Shipped
+                   Mark as Shipped
                   </a-menu-item>
                   <a-menu-item key="deliver" v-if="record.order_status === 'shipped'">
                     <CheckCircleOutlined /> Mark as Delivered

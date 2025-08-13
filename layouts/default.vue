@@ -1,8 +1,15 @@
 <template>
   <a-layout class="min-h-screen">
     <!-- Responsive Sider with mobile handling -->
-    <a-layout-sider :collapsed="isMobile || collapsed" collapsible :trigger="null" :breakpoint="'lg'"
-      @collapse="handleCollapse" @breakpoint="handleBreakpoint" :class="{ 'mobile-sider': isMobile && siderVisible }">
+    <a-layout-sider 
+      :collapsed="isMobile || collapsed" 
+      collapsible 
+      :trigger="null" 
+      :breakpoint="'lg'"
+      @collapse="handleCollapse" 
+      @breakpoint="handleBreakpoint" 
+      :class="{ 'mobile-sider': isMobile && siderVisible }"
+    >
       <div class="logo p-4 h-16 flex items-center justify-center">
         <h1 class="text-white text-xl font-bold" v-if="!collapsed || (isMobile && siderVisible)">Admin</h1>
         <h1 class="text-white text-xl font-bold" v-else>AP</h1>
@@ -15,6 +22,24 @@
             <span>Dashboard</span>
           </NuxtLink>
         </a-menu-item>
+
+        <!-- Users submenu -->
+        <a-sub-menu key="users">
+          <template #icon><user-outlined /></template>
+          <template #title>Users</template>
+          <a-menu-item key="users-list">
+            <NuxtLink to="/users">View All Users</NuxtLink>
+          </a-menu-item>
+        </a-sub-menu>
+
+        <!-- Roles submenu -->
+        <a-sub-menu key="roles">
+          <template #icon><team-outlined /></template>
+          <template #title>Roles</template>
+          <a-menu-item key="role-list">
+            <NuxtLink to="/roles">View All Roles</NuxtLink>
+          </a-menu-item>
+        </a-sub-menu>
 
         <!-- Delivery -->
         <a-menu-item key="deliveries">
@@ -89,15 +114,6 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Users submenu -->
-        <a-sub-menu key="users">
-          <template #icon><user-outlined /></template>
-          <template #title>Users</template>
-          <a-menu-item key="users-list">
-            <NuxtLink to="/users">View All Users</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
         <!-- Products submenu -->
         <a-sub-menu key="products">
           <template #icon><shopping-outlined /></template>
@@ -126,6 +142,9 @@
           <a-menu-item key="reports-inventory">
             <NuxtLink to="/reports/inventory">Inventory Report</NuxtLink>
           </a-menu-item>
+          <a-menu-item key="reports-topsale">
+            <NuxtLink to="/reports/topsale">Top Sale Report</NuxtLink>
+          </a-menu-item>
         </a-sub-menu>
 
         <!-- Settings submenu -->
@@ -138,24 +157,30 @@
           <a-menu-item key="settings-profile">
             <NuxtLink to="/settings/profile">Profile</NuxtLink>
           </a-menu-item>
-          <a-menu-item key="settings-security">
-            <NuxtLink to="/settings/security">Security</NuxtLink>
-          </a-menu-item>
         </a-sub-menu>
       </a-menu>
     </a-layout-sider>
 
     <!-- Mobile overlay backdrop when sidebar is open -->
-    <div v-if="isMobile && siderVisible" class="fixed inset-0 bg-black bg-opacity-50 z-10"
-      @click="siderVisible = false">
-    </div>
+    <div 
+      v-if="isMobile && siderVisible" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-10"
+      @click="siderVisible = false"
+    ></div>
 
     <a-layout>
       <a-layout-header class="bg-white px-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
         <div class="flex items-center">
-          <menu-unfold-outlined v-if="isMobile ? !siderVisible : collapsed" class="trigger text-xl mr-4 cursor-pointer"
-            @click="toggleSider" />
-          <menu-fold-outlined v-else class="trigger text-xl mr-4 cursor-pointer" @click="toggleSider" />
+          <menu-unfold-outlined 
+            v-if="isMobile ? !siderVisible : collapsed" 
+            class="trigger text-xl mr-4 cursor-pointer"
+            @click="toggleSider" 
+          />
+          <menu-fold-outlined 
+            v-else 
+            class="trigger text-xl mr-4 cursor-pointer" 
+            @click="toggleSider" 
+          />
           <h1 class="text-lg font-medium md:text-xl lg:hidden">Admin Panel</h1>
         </div>
 
@@ -197,7 +222,10 @@
                   <NuxtLink to="/settings">Settings</NuxtLink>
                 </a-menu-item>
                 <a-menu-divider />
-                <a-menu-item key="logout">Logout</a-menu-item>
+                <a-menu-item key="logout" @click="handleLogout" :loading="isLoggingOut">
+                  <logout-outlined class="mr-2" />
+                  Logout
+                </a-menu-item>
               </a-menu>
             </template>
           </a-dropdown>
@@ -213,72 +241,79 @@
   </a-layout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 
 // Reactive data
 const collapsed = ref(false)
 const isMobile = ref(false)
 const siderVisible = ref(false)
+const isLoggingOut = ref(false)
 const route = useRoute()
-const openKeys = ref([])
+const router = useRouter()
+const openKeys = ref<string[]>([])
 
 // Computed property for selected menu keys with proper path matching
 const selectedKeys = computed(() => {
   const path = route.path
-  
+
   // Dashboard
   if (path === '/') return ['dashboard']
-  
+
   // Deliveries
   if (path.startsWith('/deliveries')) return ['deliveries']
-  
+
   // Categories
   if (path === '/categories') return ['categories-list']
   if (path === '/categories/group') return ['categories-group']
-  
+
   // Sizes
   if (path === '/sizes') return ['sizes-list']
   if (path === '/sizes/group') return ['size-group']
-  
+
   // Brands
   if (path.startsWith('/brands')) return ['brands']
-  
+
   // Promotions
   if (path === '/promotions/discounts') return ['discounts']
-  
+
   // Banners
   if (path.startsWith('/banners')) return ['banners']
-  
+
   // Seasons
   if (path.startsWith('/seasons')) return ['seasons']
-  
+
   // Colors
   if (path.startsWith('/colors')) return ['colors']
-  
+
   // Users
   if (path === '/users') return ['users-list']
   if (path === '/users/add') return ['users-add']
-  
+
+  // Roles
+  if (path === '/roles') return ['role-list']
+
   // Products
   if (path === '/products') return ['products-list']
   if (path === '/products/add') return ['products-add']
-  
+
   // Orders
   if (path === '/orders') return ['orders-list']
   if (path === '/orders/pending') return ['orders-pending']
   if (path === '/orders/complete') return ['orders-complete']
-  
+
   // Reports
   if (path === '/reports/sales') return ['reports-sales']
   if (path === '/reports/inventory') return ['reports-inventory']
-  
+  if (path === '/reports/topsale') return ['reports-topsale']
+
   // Settings
   if (path === '/settings/general') return ['settings-general']
   if (path === '/settings/profile') return ['settings-profile']
   if (path === '/settings/security') return ['settings-security']
-  
+
   return []
 })
 
@@ -286,9 +321,9 @@ const selectedKeys = computed(() => {
 watch(selectedKeys, (newKeys) => {
   if (newKeys.length > 0) {
     const key = newKeys[0]
-    
+
     // Define parent-child relationships
-    const menuHierarchy = {
+    const menuHierarchy: Record<string, string> = {
       'categories-list': 'categories',
       'categories-group': 'categories',
       'sizes-list': 'sizes',
@@ -296,6 +331,7 @@ watch(selectedKeys, (newKeys) => {
       'discounts': 'promotions',
       'users-list': 'users',
       'users-add': 'users',
+      'role-list': 'roles',
       'products-list': 'products',
       'products-add': 'products',
       'orders-list': 'orders',
@@ -303,11 +339,12 @@ watch(selectedKeys, (newKeys) => {
       'orders-complete': 'orders',
       'reports-sales': 'reports',
       'reports-inventory': 'reports',
+      'reports-topsale': 'reports',
       'settings-general': 'settings',
       'settings-profile': 'settings',
       'settings-security': 'settings'
     }
-    
+
     const parentKey = menuHierarchy[key]
     if (parentKey && !openKeys.value.includes(parentKey)) {
       openKeys.value = [...openKeys.value, parentKey]
@@ -316,11 +353,11 @@ watch(selectedKeys, (newKeys) => {
 }, { immediate: true })
 
 // Methods
-const handleCollapse = (isCollapsed) => {
+const handleCollapse = (isCollapsed: boolean) => {
   collapsed.value = isCollapsed
 }
 
-const handleBreakpoint = (broken) => {
+const handleBreakpoint = (broken: boolean) => {
   isMobile.value = broken
   if (broken) {
     collapsed.value = false
@@ -333,6 +370,42 @@ const toggleSider = () => {
     siderVisible.value = !siderVisible.value
   } else {
     collapsed.value = !collapsed.value
+  }
+}
+
+// Logout functionality
+const handleLogout = async () => {
+  try {
+    isLoggingOut.value = true
+    
+    // Make POST request to logout endpoint
+    const response = await $fetch('/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    // Clear any stored authentication data
+    // Remove token from localStorage/cookies if you're using them
+    if (process.client) {
+      localStorage.removeItem('auth-token')
+      localStorage.removeItem('user-data')
+      // Or if using cookies
+      document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    }
+    
+    // Show success message
+    message.success('Logged out successfully')
+    
+    // Redirect to login page
+    await router.push('/login')
+    
+  } catch (error) {
+    console.error('Logout error:', error)
+    message.error('Failed to logout. Please try again.')
+  } finally {
+    isLoggingOut.value = false
   }
 }
 </script>
@@ -369,5 +442,11 @@ const toggleSider = () => {
   .ant-layout-sider:not(.ant-layout-sider-collapsed) {
     transform: translateX(0);
   }
+}
+
+/* Loading state for logout button */
+.ant-menu-item[loading] {
+  pointer-events: none;
+  opacity: 0.6;
 }
 </style>
