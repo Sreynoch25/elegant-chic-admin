@@ -645,7 +645,7 @@ const createItem = async () => {
 
 // Update item function
 const updateItem = async () => {
-  if (!editingItemId.value) return
+
 
   try {
     const formData = new FormData()
