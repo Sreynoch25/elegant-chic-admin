@@ -42,15 +42,15 @@
       <a-card class="stat-card">
         <a-statistic
           title="Super Admins"
-          :value="users.filter(u => u.roles === 'super_admin').length"
+          :value="users.filter(u => u.role === 'super_admin').length"
           :value-style="{ color: '#722ed1' }"
           :prefix="h(CrownOutlined)"
         />
       </a-card>
       <a-card class="stat-card">
         <a-statistic
-          title="Total Roles"
-          :value="roles.length"
+          title="Admins"
+          :value="users.filter(u => u.role === 'admin').length"
           :value-style="{ color: '#fa8c16' }"
           :prefix="h(SafetyOutlined)"
         />
@@ -102,12 +102,12 @@
           </template>
 
           <!-- Role Badge Column -->
-          <template v-else-if="column.key === 'roles'">
-            <a-tag :color="getRoleColor(record.roles)" class="role-tag">
+          <template v-else-if="column.key === 'role'">
+            <a-tag :color="getRoleColor(record.role)" class="role-tag">
               <template #icon>
-                <component :is="getRoleIcon(record.roles)" />
+                <component :is="getRoleIcon(record.role)" />
               </template>
-              {{ formatRole(record.roles) }}
+              {{ formatRole(record.role) }}
             </a-tag>
           </template>
 
@@ -212,11 +212,11 @@
         <div class="form-grid">
           <a-form-item
             label="Role"
-            name="roles"
+            name="role"
             class="form-item"
           >
             <a-select
-              v-model:value="formData.roles"
+              v-model:value="formData.role"
               placeholder="Select user role"
               size="large"
               :options="roleOptions"
@@ -257,6 +257,20 @@
         </a-form-item>
 
         <a-form-item
+          v-if="modalMode === 'create'"
+          label="Confirm Password"
+          name="password_confirmation"
+          class="form-item"
+        >
+          <a-input-password
+            v-model:value="formData.password_confirmation"
+            placeholder="Confirm password"
+            :prefix="h(LockOutlined)"
+            size="large"
+          />
+        </a-form-item>
+
+        <a-form-item
           label="Profile Image"
           name="profile_image"
           class="form-item"
@@ -268,6 +282,7 @@
             list-type="picture-card"
             class="profile-upload"
             :max-count="1"
+            accept="image/*"
           >
             <div v-if="fileList.length < 1">
               <PlusOutlined />
@@ -284,6 +299,8 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { message } from 'ant-design-vue'
 import type { UploadFile, TableColumnProps, FormInstance } from 'ant-design-vue'
+import type { Role, Response} from "~/types/roles/role";
+
 import {
   UserOutlined,
   PlusOutlined,
@@ -311,21 +328,11 @@ interface User {
   id: number
   name: string
   email: string
-  roles: string
+  role: string // Changed from roles to role
   profile_image: string | null
   is_active: boolean
   created_at: string
   updated_at?: string
-}
-
-interface Role {
-  id: number
-  name: string
-  guard_name: string
-  created_at: string
-  updated_at: string
-  permissions_count: number
-  users_count: number
 }
 
 interface ApiResponse<T> {
@@ -339,8 +346,9 @@ interface FormData {
   id: number | null
   name: string
   email: string
-  roles: string
+  role: string // Changed from roles to role
   password: string
+  password_confirmation: string
   profile_image: string | null
   is_active: boolean
 }
@@ -353,11 +361,8 @@ interface RoleIcons {
   [key: string]: any
 }
 
-type RoleType = 'super_admin' | 'admin' | 'customer' | 'viewer'
-
 // Reactive data
 const users = ref<User[]>([])
-const roles = ref<Role[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const modalVisible = ref(false)
@@ -371,8 +376,9 @@ const formData = reactive<FormData>({
   id: null,
   name: '',
   email: '',
-  roles: '',
+  role: '',
   password: '',
+  password_confirmation: '',
   profile_image: null,
   is_active: true
 })
@@ -380,23 +386,39 @@ const formData = reactive<FormData>({
 // Form validation rules
 const formRules = computed(() => ({
   name: [
-    { required: true, message: 'Please enter full name' },
-    { min: 2, max: 50, message: 'Name must be between 2 and 50 characters' }
+    { required: true, message: 'Please enter full name', type: 'string' as const },
+    { min: 2, max: 50, message: 'Name must be between 2 and 50 characters', type: 'string' as const }
   ],
   email: [
-    { required: true, message: 'Please enter email address' },
+    { required: true, message: 'Please enter email address', type: 'email' as const },
     { type: 'email' as const, message: 'Please enter a valid email address' }
   ],
-  roles: [
-    { required: true, message: 'Please select a role' }
+  role: [
+    { required: true, message: 'Please select a role', type: 'string' as const }
   ],
   password: [
-    { required: modalMode.value === 'create', message: 'Please enter password' },
-    { min: 6, message: 'Password must be at least 6 characters' }
+    { required: modalMode.value === 'create', message: 'Please enter password', type: 'string' as const },
+    { min: 6, message: 'Password must be at least 6 characters', type: 'string' as const }
+  ],
+  password_confirmation: [
+    { 
+      required: modalMode.value === 'create' && !!formData.password, 
+      message: 'Please confirm password',
+      type: 'string' as const
+    },
+    {
+      validator: (_: any, value: string) => {
+        if (modalMode.value === 'create' && formData.password && value !== formData.password) {
+          return Promise.reject(new Error('Passwords do not match'))
+        }
+        return Promise.resolve()
+      },
+      type: 'string' as const
+    }
   ]
 }))
 
-// Table columns - Fixed the sorter type issue
+// Table columns
 const columns: TableColumnProps[] = [
   {
     title: 'Avatar',
@@ -419,15 +441,14 @@ const columns: TableColumnProps[] = [
   },
   {
     title: 'Role',
-    dataIndex: 'roles',
-    key: 'roles',
+    dataIndex: 'role',
+    key: 'role',
     filters: [
       { text: 'Super Admin', value: 'super_admin' },
       { text: 'Admin', value: 'admin' },
-      { text: 'Customer', value: 'customer' },
-      { text: 'Viewer', value: 'viewer' }
+      { text: 'No Role', value: 'no_role' }
     ],
-    onFilter: (value: string | number | boolean, record: any) => record.roles === value
+    onFilter: (value: string | number | boolean, record: any) => record.role === value
   },
   {
     title: 'Status',
@@ -473,16 +494,34 @@ const filteredUsers = computed(() => {
   return users.value.filter(user => 
     user.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
     user.email.toLowerCase().includes(searchText.value.toLowerCase()) ||
-    user.roles.toLowerCase().includes(searchText.value.toLowerCase())
+    user.role.toLowerCase().includes(searchText.value.toLowerCase())
   )
 })
 
+
 const roleOptions = computed(() => {
   return roles.value.map(role => ({
-    label: formatRole(role.name),
-    value: role.name
+    label: role.name,  
+    value: role.name      
   }))
 })
+const roles = ref<Role[]>([])
+
+
+const fetchRoles = async () => {
+  loading.value = true
+  try {
+    const response = await useFetchDataApi('/roles') as { data: { value: Response<Role[]> } }
+    if (response.data.value && response.data.value.success) {
+      roles.value = response.data.value.data || []
+    }
+  } catch (error) {
+    message.error('Failed to fetch roles')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
 
 // Declare useFetchDataApi function (assuming it's a composable)
 declare function useFetchDataApi(url: string, options?: any): Promise<{
@@ -507,18 +546,6 @@ const fetchUsers = async () => {
   }
 }
 
-const fetchRoles = async () => {
-  try {
-    const { data } = await useFetchDataApi('/roles')
-    if (data.value?.success && Array.isArray(data.value?.data)) {
-      roles.value = data.value.data as Role[]
-    }
-  } catch (error: any) {
-    message.error('Failed to fetch roles')
-    console.error('Error fetching roles:', error)
-  }
-}
-
 const showCreateModal = () => {
   modalMode.value = 'create'
   resetForm()
@@ -530,10 +557,11 @@ const showEditModal = (user: any) => {
   formData.id = user.id
   formData.name = user.name
   formData.email = user.email
-  formData.roles = user.roles
+  formData.role = user.role
   formData.is_active = user.is_active
   formData.profile_image = user.profile_image
   formData.password = ''
+  formData.password_confirmation = ''
   
   if (user.profile_image) {
     fileList.value = [{
@@ -542,6 +570,8 @@ const showEditModal = (user: any) => {
       status: 'done',
       url: user.profile_image
     }]
+  } else {
+    fileList.value = []
   }
   
   modalVisible.value = true
@@ -558,17 +588,26 @@ const handleSubmit = async () => {
     
     const method = modalMode.value === 'create' ? 'POST' : 'PUT'
     
-    const payload: Partial<FormData> = {
+    const payload: any = {
       name: formData.name,
       email: formData.email,
-      roles: formData.roles,
-      is_active: formData.is_active,
-      profile_image: formData.profile_image
+      role: formData.role,
+      is_active: formData.is_active ? 1 : 0, // Convert boolean to integer
     }
 
+    // Always include profile_image in payload (null if not set)
+    payload.profile_image = formData.profile_image
+
+    // Only include password fields for creation
     if (modalMode.value === 'create') {
       payload.password = formData.password
+      payload.password_confirmation = formData.password_confirmation
     }
+
+    console.log('Submitting payload:', {
+      ...payload,
+      profile_image: payload.profile_image ? payload.profile_image.substring(0, 50) + '...' : null
+    })
 
     const { data } = await useFetchDataApi(endpoint, {
       method,
@@ -580,7 +619,7 @@ const handleSubmit = async () => {
       modalVisible.value = false
       await fetchUsers()
     } else {
-      message.error('Operation failed')
+      message.error(data.value?.message || 'Operation failed')
     }
   } catch (error) {
     console.error('Error submitting form:', error)
@@ -617,8 +656,9 @@ const resetForm = () => {
   formData.id = null
   formData.name = ''
   formData.email = ''
-  formData.roles = ''
+  formData.role = ''
   formData.password = ''
+  formData.password_confirmation = ''
   formData.profile_image = null
   formData.is_active = true
   fileList.value = []
@@ -630,7 +670,7 @@ const onSearch = (value: string) => {
 }
 
 const refreshData = async () => {
-  await Promise.all([fetchUsers(), fetchRoles()])
+  await fetchUsers()
   message.success('Data refreshed')
 }
 
@@ -651,17 +691,39 @@ const beforeUpload = (file: File) => {
 }
 
 const handleUpload = (options: any) => {
-  const { file } = options
+  const { file, onSuccess, onError } = options
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    formData.profile_image = e.target?.result as string
+  try {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const result = e.target?.result as string
+      formData.profile_image = result
+      
+      // Update the file list to show the uploaded image
+      fileList.value = [{
+        uid: file.uid || '-1',
+        name: file.name || 'image.jpg',
+        status: 'done',
+        url: result
+      }]
+      
+      console.log('Image uploaded successfully:', result.substring(0, 50) + '...')
+      onSuccess?.(result)
+    }
+    reader.onerror = (error) => {
+      console.error('File reader error:', error)
+      onError?.(new Error('Failed to read file'))
+    }
+    reader.readAsDataURL(file)
+  } catch (error) {
+    console.error('Upload error:', error)
+    onError?.(error)
   }
-  reader.readAsDataURL(file)
 }
 
 // Helper functions
 const formatRole = (role: string) => {
+  if (role === 'no_role') return 'No Role'
   return role.split('_').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ')
@@ -671,8 +733,7 @@ const getRoleColor = (role: string): string => {
   const colors: RoleColors = {
     super_admin: 'purple',
     admin: 'blue',
-    customer: 'green',
-    viewer: 'orange'
+    no_role: 'default'
   }
   return colors[role] || 'default'
 }
@@ -681,8 +742,7 @@ const getRoleIcon = (role: string) => {
   const icons: RoleIcons = {
     super_admin: CrownOutlined,
     admin: SafetyOutlined,
-    customer: UserOutlined,
-    viewer: UserOutlined
+    no_role: UserOutlined
   }
   return icons[role] || UserOutlined
 }
@@ -699,7 +759,8 @@ const formatDate = (dateString: string) => {
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([fetchUsers(), fetchRoles()])
+  await fetchUsers()
+  await fetchRoles()
 })
 </script>
 

@@ -1,546 +1,490 @@
 <template>
-  <div class="dashboard-container">
-    <!-- Page Header -->
-    <a-page-header
-      title="Fashion Dashboard"
-      sub-title="Admin Overview"
-      class="dashboard-header"
-    >
-      <template #extra>
-        <a-space>
-          <a-button @click="refreshData" :loading="pending">
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            Refresh
-          </a-button>
-          <a-tag color="green" v-if="data?.last_updated">
-            Last updated: {{ formatDateTime(data.last_updated) }}
-          </a-tag>
-        </a-space>
-      </template>
-    </a-page-header>
+    <div class="dashboard !m-2 ">
+        <!-- Page Header -->
+        <div class=" m-1.5 !mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Fashion Store Dashboard</h1>
+            <p class="text-gray-600">Welcome back! Here's your fashion store performance today.</p>
+            <!-- <pre>{{ JSON.stringify(dashboardData, null, 2) }}</pre > -->
+        </div>
 
-    <!-- Loading State -->
-    <div v-if="pending && !data" class="loading-container">
-      <a-spin size="large" />
-      <p>Loading dashboard data...</p>
+        <!-- Stats Cards -->
+        <a-row :gutter="[16, 16]" class="!mb-6">
+            <a-col :xs="24" :sm="12" :lg="6" v-for="stat in stats" :key="stat.key">
+                <a-card :bordered="false" class="stat-card">
+                    <div class="flex items-center gap-2">
+                        <div class="stat-icon" :style="{ backgroundColor: stat.color + '20', color: stat.color }">
+                            <component :is="stat.icon" class="text-xl" />
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-gray-500 text-sm mb-1">{{ stat.title }}</p>
+                            <h3 class="text-2xl font-bold text-gray-800">{{ stat.value }}</h3>
+                            <div class="flex items-center mt-1 gap-1">
+                                <span :class="stat.trend === 'up' ? 'text-green-500' : 'text-red-500'" class="text-xs">
+                                    <arrow-up-outlined v-if="stat.trend === 'up'" />
+                                    <arrow-down-outlined v-else />
+                                    {{ stat.change }}
+                                </span>
+                                <span class="text-gray-400 text-xs ml-1">vs last month</span>
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+            </a-col>
+        </a-row>
+
+        <!-- Charts Section -->
+        <a-row :gutter="[16, 16]" class="!mb-6">
+            <!-- Sales Chart -->
+            <a-col :xs="24" :lg="16">
+                <a-card title="Sales Overview" :bordered="false">
+                    <template #extra>
+                        <a-radio-group v-model:value="salesPeriod" size="small">
+                            <a-radio-button value="7d">7D</a-radio-button>
+                            <a-radio-button value="30d">30D</a-radio-button>
+                            <a-radio-button value="90d">90D</a-radio-button>
+                        </a-radio-group>
+                    </template>
+                    <div class="chart-container" style="height: 300px;">
+                        <FashionSalesChart :period="salesPeriod" :sales-overview="salesOverview" :kpis="kpis" />
+                    </div>
+                </a-card>
+            </a-col>
+
+            <!-- Top Fashion Categories -->
+            <a-col :xs="24" :lg="8">
+                <a-card title="Top Fashion Categories" :bordered="false">
+                    <div class="space-y-3">
+                        <div v-for="category in topCategories" :key="category.name"
+                            class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-3" :style="{ backgroundColor: category.color }">
+                                </div>
+                                <span class="text-sm text-gray-600">{{ category.name }}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-800">${{ category.sales }}</div>
+                                <div class="text-xs text-gray-400">{{ category.percentage }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+            </a-col>
+        </a-row>
+
+        <!-- Recent Activity Section -->
+        <a-row :gutter="[16, 16]">
+            <!-- Recent Orders -->
+            <a-col :xs="24" :lg="12">
+                <a-card title="Recent Fashion Orders" :bordered="false">
+                    <template #extra>
+                        <NuxtLink to="/orders" class="text-pink-500 hover:text-pink-600 text-sm">View All</NuxtLink>
+                    </template>
+                    <div class="!space-y-3">
+                        <div v-for="order in recentOrders" :key="order.id"
+                            class="flex items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg border border-pink-100">
+                            <div class="flex items-center">
+                                <a-avatar :size="30" class="!m-3" :style="{ backgroundColor: order.avatarColor }">
+                                    {{ order.customer.charAt(0) }}
+                                </a-avatar>
+                                <div>
+                                    <p class="font-medium text-gray-800 text-sm">{{ order.customer }}</p>
+                                </div>
+                            </div>
+                            <div class="flex text-right">
+                                <p class="font-semibold text-gray-800 !mr-1">${{ order.amount }}</p>
+                                <a-tag
+                                    :color="order.status === 'completed' ? 'green' : order.status === 'pending' ? 'orange' : 'blue'"
+                                    size="small">
+                                    {{ order.status }}
+                                </a-tag>
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+            </a-col>
+
+            <!-- Low Stock Alert -->
+            <a-col :xs="24" :lg="12">
+                <a-card title="Low Stock Fashion Items" :bordered="false">
+                    <template #extra>
+                        <NuxtLink to="/products" class="text-pink-500 hover:text-pink-600 text-sm">View All</NuxtLink>
+                    </template>
+                    <div class="!space-y-3">
+                        <div v-for="product in lowStockProducts" :key="product.id"
+                            class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                            <div class="flex items-center">
+                                <div
+                                    class="w-7 h-7 !m-3 bg-gradient-to-br from-pink-200 to-purple-200 rounded flex items-center justify-center text-pink-600">
+                                    <component :is="product.icon" />
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 text-sm">{{ product.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ product.size }} • {{ product.color }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right  !mr-3">
+                                <p class="font-semibold text-red-600">{{ product.stock }} left</p>
+                                <!-- <p class="text-xs text-gray-500">Min: {{ product.minStock }}</p> -->
+                            </div>
+                        </div>
+                    </div>
+                </a-card>
+            </a-col>
+        </a-row>
+
+        <!-- Quick Actions -->
+        <div class="!mt-3">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Fashion Actions</h3>
+            <a-row :gutter="[16, 16]">
+                <a-col :xs="12" :sm="8" :md="6" v-for="action in quickActions" :key="action.key">
+                    <NuxtLink :to="action.link">
+                        <a-card :bordered="false" hoverable class="text-center quick-action-card">
+                            <div class="action-icon !mb-3" :style="{ color: action.color }">
+                                <component :is="action.icon" class="text-2xl" />
+                            </div>
+                            <p class="text-sm font-medium text-gray-800">{{ action.title }}</p>
+                        </a-card>
+                    </NuxtLink>
+                </a-col>
+            </a-row>
+        </div>
     </div>
-
-    <!-- Error State -->
-    <a-alert
-      v-else-if="error"
-      type="error"
-      :message="error.message || 'Failed to load dashboard data'"
-      show-icon
-      closable
-      class="error-alert"
-    />
-
-    <!-- Dashboard Content -->
-    <div v-else-if="data" class="dashboard-content">
-      <!-- KPI Cards -->
-      <a-row :gutter="[16, 16]" class="kpi-section">
-        <a-col :xs="24" :sm="12" :md="6" v-for="(kpi, key) in data.kpis" :key="key">
-          <a-card class="kpi-card" :class="`kpi-${kpi.color}`">
-            <div class="kpi-content">
-              <div class="kpi-icon">
-                <component :is="getIcon(kpi.icon)" />
-              </div>
-              <div class="kpi-info">
-                <div class="kpi-value">{{ formatKpiValue(kpi.value, key) }}</div>
-                <div class="kpi-label">{{ kpi.label }}</div>
-                <div class="kpi-meta" v-if="kpi.variants">
-                  {{ kpi.variants }} variants
-                </div>
-                <div class="kpi-meta" v-if="kpi.new_this_month">
-                  +{{ kpi.new_this_month }} this month
-                </div>
-              </div>
-              <div class="kpi-trend" :class="`trend-${kpi.trend}`">
-                <ArrowUpOutlined v-if="kpi.trend === 'up'" />
-                <ArrowDownOutlined v-else-if="kpi.trend === 'down'" />
-                <MinusOutlined v-else />
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-
-      <!-- Charts and Tables Row -->
-      <a-row :gutter="[16, 16]" class="charts-section">
-        <!-- Sales Overview Chart -->
-        <a-col :xs="24" :lg="16">
-          <a-card title="Sales Overview" class="chart-card">
-            <div class="sales-chart">
-              <a-empty v-if="!hasSalesData" description="No sales data available" />
-              <div v-else ref="salesChart" class="chart-container"></div>
-            </div>
-          </a-card>
-        </a-col>
-
-        <!-- Top Categories -->
-        <a-col :xs="24" :lg="8">
-          <a-card title="Top Categories" class="categories-card">
-            <div class="category-list">
-              <div 
-                v-for="category in data.top_categories" 
-                :key="category.id"
-                class="category-item"
-              >
-                <div class="category-info">
-                  <div class="category-name">{{ category.name }}</div>
-                  <div class="category-stats">
-                    <span class="revenue">${{ parseFloat(category.revenue).toFixed(2) }}</span>
-                    <span class="orders">{{ category.orders }} orders</span>
-                  </div>
-                </div>
-                <div class="category-progress">
-                  <a-progress 
-                    :percent="getCategoryPercentage(category.revenue)" 
-                    :show-info="false"
-                    size="small"
-                  />
-                </div>
-              </div>
-            </div>
-          </a-card>
-        </a-col>
-      </a-row>
-
-      <!-- Tables Row -->
-      <a-row :gutter="[16, 16]" class="tables-section">
-        <!-- Recent Orders -->
-        <a-col :xs="24" :lg="14">
-          <a-card title="Recent Orders" class="orders-card">
-            <a-table 
-              :dataSource="data.recent_orders" 
-              :columns="orderColumns"
-              :pagination="{ pageSize: 5 }"
-              size="small"
-              :scroll="{ x: 800 }"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'status'">
-                  <a-tag :color="record.status_color">
-                    {{ record.status_label }}
-                  </a-tag>
-                </template>
-                <template v-else-if="column.key === 'amount'">
-                  ${{ parseFloat(record.amount).toFixed(2) }}
-                </template>
-                <template v-else-if="column.key === 'datetime'">
-                  <div class="datetime-cell">
-                    <div>{{ record.date }}</div>
-                    <small class="time">{{ record.time }}</small>
-                  </div>
-                </template>
-              </template>
-            </a-table>
-          </a-card>
-        </a-col>
-
-        <!-- Low Stock Items -->
-        <a-col :xs="24" :lg="10">
-          <a-card title="Low Stock Alert" class="stock-card">
-            <a-table 
-              :dataSource="data.low_stock_items" 
-              :columns="stockColumns"
-              :pagination="{ pageSize: 5 }"
-              size="small"
-              :scroll="{ x: 600 }"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'status'">
-                  <a-tag :color="record.status_color">
-                    {{ record.status }}
-                  </a-tag>
-                </template>
-                <template v-else-if="column.key === 'quantity'">
-                  <span :class="record.status === 'critical' ? 'critical-stock' : ''">
-                    {{ record.quantity }}
-                  </span>
-                </template>
-                <template v-else-if="column.key === 'price'">
-                  ${{ parseFloat(record.price).toFixed(2) }}
-                </template>
-              </template>
-            </a-table>
-          </a-card>
-        </a-col>
-      </a-row>
-    </div>
-  </div>
 </template>
 
-<script setup>
-import { 
-  DollarOutlined, 
-  ShoppingOutlined, 
-  UserOutlined, 
-  PackageOutlined,
-  ReloadOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  MinusOutlined
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import {
+    DollarCircleOutlined,
+    ShoppingCartOutlined,
+    UserOutlined,
+    ShoppingOutlined,
+    ArrowUpOutlined,
+    ArrowDownOutlined,
+    PlusOutlined,
+    EyeOutlined,
+    SettingOutlined,
+    FileTextOutlined,
+    GiftOutlined,
+    PictureOutlined,
+    TagOutlined,
 } from '@ant-design/icons-vue'
+import type { DashboardResponse, DashboardData } from '~/types/dashboard/dashboard'
 
-// Meta
 definePageMeta({
-  layouts: 'default'
+    layout: 'default',
 })
 
-// Fetch dashboard data
-const { data, pending, error, refresh } = await useFetch('/dashboard/overview', {
-  key: 'dashboard-overview',
-  server: false
-})
+const salesPeriod = ref('30d')
 
-// Reactive refs
-const salesChart = ref(null)
-
-// Table columns
-const orderColumns = [
-  {
-    title: 'Order #',
-    dataIndex: 'order_number',
-    key: 'order_number',
-    width: 150,
-    ellipsis: true
-  },
-  {
-    title: 'Customer',
-    dataIndex: 'customer_name',
-    key: 'customer_name',
-    ellipsis: true
-  },
-  {
-    title: 'Amount',
-    dataIndex: 'amount',
-    key: 'amount',
-    width: 100,
-    align: 'right'
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    width: 100
-  },
-  {
-    title: 'Date & Time',
-    key: 'datetime',
-    width: 140
-  }
-]
-
-const stockColumns = [
-  {
-    title: 'Item',
-    dataIndex: 'item_name',
-    key: 'item_name',
-    ellipsis: true
-  },
-  {
-    title: 'Color/Size',
-    key: 'variant',
-    width: 80,
-    customRender: ({ record }) => `${record.color}/${record.size}`
-  },
-  {
-    title: 'Qty',
-    dataIndex: 'quantity',
-    key: 'quantity',
-    width: 60,
-    align: 'center'
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    width: 80
-  }
-]
+// Color palettes
+const categoryColors = ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444']
+const avatarColors = ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981']
 
 // Computed properties
-const hasSalesData = computed(() => {
-  return data.value?.sales_overview?.some(week => 
-    week.dresses > 0 || week.tops__blouses > 0 || week.shoes > 0
-  )
+const kpis = computed(() => {
+    return dashboardData.value?.kpis || {}
 })
 
-// Methods
-const getIcon = (iconName) => {
-  const iconMap = {
-    'dollar-sign': DollarOutlined,
-    'shopping-bag': ShoppingOutlined,
-    'users': UserOutlined,
-    'package': PackageOutlined
-  }
-  return iconMap[iconName] || PackageOutlined
-}
+const salesOverview = computed(() => {
+    return dashboardData.value?.sales_overview || []
+})
 
-const formatKpiValue = (value, key) => {
-  if (key === 'total_revenue') {
-    return `$${parseFloat(value).toFixed(2)}`
-  }
-  return value
-}
+const stats = computed(() => {
+    if (!dashboardData.value?.kpis) return []
 
-const formatDateTime = (datetime) => {
-  return new Date(datetime).toLocaleString()
-}
+    const kpisData = dashboardData.value.kpis
+    type IconKey = 'dollar-sign' | 'shopping-bag' | 'users' | 'package'
+    type ColorKey = 'pink' | 'purple' | 'cyan' | 'orange'
 
-const getCategoryPercentage = (revenue) => {
-  if (!data.value?.top_categories) return 0
-  const maxRevenue = Math.max(...data.value.top_categories.map(c => parseFloat(c.revenue)))
-  return Math.round((parseFloat(revenue) / maxRevenue) * 100)
-}
+    const iconMap: Record<IconKey, Component> = {
+        'dollar-sign': DollarCircleOutlined,
+        'shopping-bag': ShoppingCartOutlined,
+        'users': UserOutlined,
+        'package': ShoppingOutlined
+    }
 
-const refreshData = () => {
-  refresh()
-}
+    const colorMap: Record<ColorKey, string> = {
+        pink: '#ec4899',
+        purple: '#8b5cf6',
+        cyan: '#06b6d4',
+        orange: '#f59e0b'
+    }
 
-// Sales chart rendering (using a simple CSS-based chart for demo)
-watch(data, (newData) => {
-  if (newData && hasSalesData.value) {
-    nextTick(() => {
-      renderSalesChart()
+    return Object.entries(kpisData).map(([key, data]) => {
+        const icon = iconMap[data.icon as IconKey] || DollarCircleOutlined
+        const color = colorMap[data.color as ColorKey] || '#ec4899'
+
+        return {
+            key,
+            title: data.label,
+            value: data.value,
+            change: `${data.change}%`,
+            trend: data.trend,
+            icon,
+            color
+        }
     })
-  }
-}, { immediate: true })
+})
 
-const renderSalesChart = () => {
-  // This is a placeholder for chart rendering
-  // In a real application, you would use a charting library like Chart.js or ECharts
-  console.log('Rendering sales chart with data:', data.value?.sales_overview)
+const topCategories = computed(() => {
+  if (!dashboardData.value?.top_categories) return []
+
+  // total revenue for percentage calculation
+  const totalRevenue = dashboardData.value.top_categories.reduce(
+    (sum, cat) => sum + parseFloat(cat.revenue),
+    0
+  )
+
+  return dashboardData.value.top_categories.map((category, index) => {
+    const revenueNum = parseFloat(category.revenue)
+
+    return {
+      id: category.id,
+      name: category.name,
+      sales: revenueNum.toFixed(2), // match template's category.sales
+      percentage: totalRevenue
+        ? ((revenueNum / totalRevenue) * 100).toFixed(2)
+        : 0,
+      color: categoryColors[index % categoryColors.length]
+    }
+  })
+})
+
+
+const recentOrders = computed(() => {
+    if (!dashboardData.value?.recent_orders) return []
+
+    return dashboardData.value.recent_orders.slice(0, 5).map((order, index) => ({
+        id: order.id,
+        customer: order.customer_name,
+        amount: order.amount,
+        status: order.status_label,
+        statusColor: order.status_color,
+        date: order.date,
+        orderNumber: order.order_number.split('-').pop(),
+        avatarColor: avatarColors[index % avatarColors.length]
+    }))
+})
+
+const lowStockProducts = computed(() => {
+    if (!dashboardData.value?.low_stock_items) return []
+
+    return dashboardData.value.low_stock_items.slice(0, 6).map(product => ({
+        id: product.id,
+        name: product.item_name,
+        size: product.size,
+        color: product.color,
+        stock: product.quantity,
+        status: product.status,
+        statusColor: product.status_color,
+        icon: TagOutlined 
+    }))
+})
+
+const quickActions = computed(() => [
+    {
+        key: 'view-orders',
+        title: 'View Orders',
+        icon: EyeOutlined,
+        color: '#8b5cf6',
+        link: '/orders'
+    },
+    {
+        key: 'settings',
+        title: 'Settings',
+        icon: SettingOutlined,
+        color: '#06b6d4',
+        link: '/settings'
+    },
+    {
+        key: 'reports',
+        title: 'Reports',
+        icon: FileTextOutlined,
+        color: '#f59e0b',
+        link: '/reports/inventory'
+    },
+    {
+        key: 'promotions',
+        title: 'Promotions',
+        icon: GiftOutlined,
+        color: '#10b981',
+        link: '/promotions/discounts'
+    },
+    {
+        key: 'gallery',
+        title: 'Gallery',
+        icon: PictureOutlined,
+        color: '#ef4444',
+        link: '/gallery'
+    }
+])
+
+const dashboardData = ref<DashboardData | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+const fetchDashboard = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+        const { data } = await useFetchDataApi<DashboardResponse>('/dashboard/overview')
+
+        if (data.value?.status_code === 200 && data.value.data) {
+            dashboardData.value = data.value.data
+        } else {
+            error.value = data.value?.message || 'No dashboard data returned'
+            message.error(error.value)
+        }
+    } catch (err: any) {
+        console.error('❌ Fetch Error:', err)
+        error.value = 'Failed to fetch dashboard data'
+        message.error(error.value)
+    } finally {
+        loading.value = false
+    }
 }
+
+onMounted(async () => {
+    await fetchDashboard()
+})
+
 </script>
 
 <style scoped>
-.dashboard-container {
-  padding: 24px;
-  background: #f0f2f5;
-  min-height: 100vh;
+.stat-card {
+    transition: all 0.3s;
+    background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
 }
 
-.dashboard-header {
-  background: white;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(236, 72, 153, 0.15);
 }
 
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 400px;
-  background: white;
-  border-radius: 8px;
-}
-
-.error-alert {
-  margin-bottom: 24px;
-}
-
-.dashboard-content {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* KPI Cards */
-.kpi-card {
-  height: 120px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.kpi-content {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding: 0;
-}
-
-.kpi-icon {
-  font-size: 32px;
-  margin-right: 16px;
-  opacity: 0.8;
-}
-
-.kpi-info {
-  flex: 1;
-}
-
-.kpi-value {
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: 4px;
-}
-
-.kpi-label {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 2px;
-}
-
-.kpi-meta {
-  font-size: 12px;
-  color: #999;
-}
-
-.kpi-trend {
-  font-size: 18px;
-  margin-left: 12px;
-}
-
-.trend-up { color: #52c41a; }
-.trend-down { color: #ff4d4f; }
-.trend-neutral { color: #999; }
-
-/* KPI Color Themes */
-.kpi-pink { 
-  background: linear-gradient(135deg, #ff6b9d, #c44569);
-  color: white;
-}
-
-.kpi-purple { 
-  background: linear-gradient(135deg, #a55eea, #8e44ad);
-  color: white;
-}
-
-.kpi-cyan { 
-  background: linear-gradient(135deg, #26d0ce, #1abc9c);
-  color: white;
-}
-
-.kpi-orange { 
-  background: linear-gradient(135deg, #ffa726, #ff7043);
-  color: white;
-}
-
-/* Chart Card */
-.chart-card .ant-card-body {
-  padding: 24px;
-}
-
-.sales-chart {
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .chart-container {
-  width: 100%;
-  height: 100%;
+    position: relative;
 }
 
-/* Categories Card */
-.categories-card .ant-card-body {
-  padding: 16px;
+.quick-action-card {
+    transition: all 0.3s;
+    border: 1px solid #f0f0f0;
+    background: linear-gradient(135deg, #fff 0%, #fafafa 100%);
 }
 
-.category-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.quick-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15);
+    border-color: #ec4899;
 }
 
-.category-item {
-  padding: 12px;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  background: #fafafa;
+.action-icon {
+    display: flex;
+    justify-content: center;
 }
 
-.category-info {
-  margin-bottom: 8px;
+/* Fashion-themed card styles */
+.ant-card {
+    border-radius: 12px;
+    overflow: hidden;
 }
 
-.category-name {
-  font-weight: 500;
-  margin-bottom: 4px;
+.ant-card-head {
+    background: linear-gradient(135deg, #fef7ff 0%, #fdf4ff 100%);
+    border-bottom: 1px solid #f3e8ff;
 }
 
-.category-stats {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #666;
+.ant-card-head-title {
+    font-weight: 600;
+    color: #6b21a8;
 }
 
-.revenue {
-  font-weight: 600;
-  color: #52c41a;
-}
-
-.orders {
-  color: #1890ff;
-}
-
-/* Table Styles */
-.orders-card, .stock-card {
-  height: fit-content;
-}
-
-.datetime-cell {
-  line-height: 1.2;
-}
-
-.time {
-  color: #999;
-  font-size: 11px;
-}
-
-.critical-stock {
-  color: #ff4d4f;
-  font-weight: 600;
-}
-
-/* Responsive Design */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 16px;
-  }
-  
-  .kpi-value {
-    font-size: 24px;
-  }
-  
-  .kpi-icon {
-    font-size: 28px;
-    margin-right: 12px;
-  }
-  
-  .sales-chart {
-    height: 250px;
-  }
+    .stat-card .stat-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .stat-card h3 {
+        font-size: 1.5rem;
+    }
+
+    .chart-container {
+        height: 250px !important;
+    }
 }
 
-/* Dark mode support */
-.dark .dashboard-container {
-  background: #141414;
+@media (max-width: 576px) {
+    .dashboard h1 {
+        font-size: 1.5rem;
+    }
+
+    .quick-action-card {
+        margin-bottom: 8px;
+    }
+
+    .action-icon {
+        margin-bottom: 8px;
+    }
 }
 
-.dark .kpi-card {
-  background: #1f1f1f;
-  border: 1px solid #303030;
+/* Fashion-themed animations */
+@keyframes fashionFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
-.dark .category-item {
-  background: #262626;
-  border-color: #303030;
+.ant-card {
+    animation: fashionFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Gradient scrollbar */
+.ant-card-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ant-card-body::-webkit-scrollbar-track {
+    background: linear-gradient(135deg, #f1f1f1 0%, #e5e5e5 100%);
+    border-radius: 3px;
+}
+
+.ant-card-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    border-radius: 3px;
+}
+
+.ant-card-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #db2777 0%, #7c3aed 100%);
+}
+
+/* Fashion color highlights */
+.text-pink-500 {
+    color: #ec4899 !important;
+}
+
+.text-pink-600 {
+    color: #db2777 !important;
+}
+
+.hover\:text-pink-600:hover {
+    color: #db2777 !important;
 }
 </style>
