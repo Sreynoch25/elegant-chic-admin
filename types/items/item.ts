@@ -1,7 +1,7 @@
 import type { UploadFile } from 'ant-design-vue';
 
 export interface ItemVariant {
-  id?: string;
+  id?: string; 
   item_id?: string;
   color_id: string;
   size_id: string;

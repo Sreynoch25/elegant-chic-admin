@@ -10,12 +10,25 @@
       @breakpoint="handleBreakpoint" 
       :class="{ 'mobile-sider': isMobile && siderVisible }"
     >
+      <!-- Logo Section -->
       <div class="logo p-4 h-16 flex items-center justify-center">
-        <h1 class="text-white text-xl font-bold" v-if="!collapsed || (isMobile && siderVisible)">Admin</h1>
+        <h1 
+          class="text-white text-xl font-bold" 
+          v-if="!collapsed || (isMobile && siderVisible)"
+        >
+          Admin
+        </h1>
         <h1 class="text-white text-xl font-bold" v-else>AP</h1>
       </div>
 
-      <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
+      <!-- Navigation Menu -->
+      <a-menu 
+        v-model:selectedKeys="selectedKeys" 
+        v-model:openKeys="openKeys" 
+        theme="dark" 
+        mode="inline"
+      >
+        <!-- Dashboard -->
         <a-menu-item key="dashboard">
           <template #icon><dashboard-outlined /></template>
           <NuxtLink to="/">
@@ -23,25 +36,31 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Users submenu -->
+        <!-- Users Management -->
         <a-sub-menu key="users">
           <template #icon><user-outlined /></template>
           <template #title>Users</template>
           <a-menu-item key="users-list">
-            <NuxtLink to="/users">View All Users</NuxtLink>
+            <NuxtLink to="/users">All Users</NuxtLink>
+          </a-menu-item>
+          <a-menu-item key="users-customer">
+            <NuxtLink to="/users/customer">All Customers</NuxtLink>
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Roles submenu -->
+        <!-- Roles & Permissions -->
         <a-sub-menu key="roles">
           <template #icon><team-outlined /></template>
           <template #title>Roles</template>
           <a-menu-item key="role-list">
             <NuxtLink to="/roles">View All Roles</NuxtLink>
           </a-menu-item>
+          <a-menu-item key="permission-list">
+            <NuxtLink to="/roles/permission">View All Permissions</NuxtLink>
+          </a-menu-item>
         </a-sub-menu>
 
-        <!-- Delivery -->
+        <!-- Delivery Management -->
         <a-menu-item key="deliveries">
           <template #icon><truck-outlined /></template>
           <NuxtLink to="/deliveries">
@@ -49,7 +68,7 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Categories submenu -->
+        <!-- Categories Management -->
         <a-sub-menu key="categories">
           <template #icon><appstore-outlined /></template>
           <template #title>Categories</template>
@@ -61,7 +80,7 @@
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Sizes submenu -->
+        <!-- Sizes Management -->
         <a-sub-menu key="sizes">
           <template #icon><pic-right-outlined /></template>
           <template #title>Sizes</template>
@@ -73,7 +92,7 @@
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Brands submenu -->
+        <!-- Brands Management -->
         <a-menu-item key="brands">
           <template #icon><crown-outlined /></template>
           <NuxtLink to="/brands">
@@ -81,7 +100,7 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Promotions submenu -->
+        <!-- Promotions -->
         <a-sub-menu key="promotions">
           <template #icon><gift-outlined /></template>
           <template #title>Promotions</template>
@@ -90,7 +109,7 @@
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Banners submenu -->
+        <!-- Banners -->
         <a-menu-item key="banners">
           <template #icon><picture-outlined /></template>
           <NuxtLink to="/banners">
@@ -98,7 +117,7 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Seasons submenu -->
+        <!-- Seasons -->
         <a-menu-item key="seasons">
           <template #icon><calendar-outlined /></template>
           <NuxtLink to="/seasons">
@@ -106,7 +125,7 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Colors submenu -->
+        <!-- Colors -->
         <a-menu-item key="colors">
           <template #icon><bg-colors-outlined /></template>
           <NuxtLink to="/colors">
@@ -114,7 +133,7 @@
           </NuxtLink>
         </a-menu-item>
 
-        <!-- Products submenu -->
+        <!-- Products Management -->
         <a-sub-menu key="products">
           <template #icon><shopping-outlined /></template>
           <template #title>Products</template>
@@ -123,7 +142,7 @@
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Orders submenu -->
+        <!-- Orders Management -->
         <a-sub-menu key="orders">
           <template #icon><shopping-cart-outlined /></template>
           <template #title>Orders</template>
@@ -132,30 +151,12 @@
           </a-menu-item>
         </a-sub-menu>
 
-        <!-- Reports submenu -->
+        <!-- Reports -->
         <a-sub-menu key="reports">
           <template #icon><bar-chart-outlined /></template>
           <template #title>Reports</template>
-          <a-menu-item key="reports-sales">
-            <NuxtLink to="/reports/sales">Sales Report</NuxtLink>
-          </a-menu-item>
           <a-menu-item key="reports-inventory">
             <NuxtLink to="/reports/inventory">Inventory Report</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="reports-topsale">
-            <NuxtLink to="/reports/topsale">Top Sale Report</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Settings submenu -->
-        <a-sub-menu key="settings">
-          <template #icon><setting-outlined /></template>
-          <template #title>Settings</template>
-          <a-menu-item key="settings-general">
-            <NuxtLink to="/settings/general">General Settings</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="settings-profile">
-            <NuxtLink to="/settings/profile">Profile</NuxtLink>
           </a-menu-item>
         </a-sub-menu>
       </a-menu>
@@ -168,8 +169,11 @@
       @click="siderVisible = false"
     ></div>
 
+    <!-- Main Layout -->
     <a-layout>
+      <!-- Header -->
       <a-layout-header class="bg-white px-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+        <!-- Left Header Content -->
         <div class="flex items-center">
           <menu-unfold-outlined 
             v-if="isMobile ? !siderVisible : collapsed" 
@@ -184,8 +188,9 @@
           <h1 class="text-lg font-medium md:text-xl lg:hidden">Admin Panel</h1>
         </div>
 
+        <!-- Right Header Content -->
         <div class="flex items-center gap-4">
-          <!-- Notification -->
+          <!-- Notification Dropdown -->
           <a-dropdown placement="bottomRight">
             <a-badge dot>
               <bell-outlined class="text-xl cursor-pointer" />
@@ -208,7 +213,7 @@
             </template>
           </a-dropdown>
 
-          <!-- User Avatar -->
+          <!-- User Avatar Dropdown -->
           <a-dropdown>
             <a-avatar class="cursor-pointer bg-blue-500">
               <template #icon><user-outlined /></template>
@@ -222,9 +227,9 @@
                   <NuxtLink to="/settings">Settings</NuxtLink>
                 </a-menu-item>
                 <a-menu-divider />
-                <a-menu-item key="logout" @click="handleLogout" :loading="isLoggingOut">
+                <a-menu-item key="logout" @click="handleLogout">
                   <logout-outlined class="mr-2" />
-                  Logout
+                  {{ loginStore.isSpinning ? 'Logging out...' : 'Logout' }}
                 </a-menu-item>
               </a-menu>
             </template>
@@ -232,8 +237,9 @@
         </div>
       </a-layout-header>
 
-      <a-layout-content class="p-4 md:p-6">
-        <div class="bg-white p-4 md:p-6 rounded-md shadow-sm min-h-[calc(100vh-120px)]">
+      <!-- Main Content -->
+      <a-layout-content class="p-4 md:p-6 h-[calc(100vh-64px)] overflow-hidden">
+        <div class="bg-white p-4 md:p-6 rounded-md shadow-sm h-full overflow-y-auto">
           <slot />
         </div>
       </a-layout-content>
@@ -243,86 +249,64 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { useLoginStore } from '~/stores/login/loginStore';
 
-// Reactive data
+// Reactive state
 const collapsed = ref(false)
 const isMobile = ref(false)
 const siderVisible = ref(false)
-const isLoggingOut = ref(false)
-const route = useRoute()
-const router = useRouter()
 const openKeys = ref<string[]>([])
 
-// Computed property for selected menu keys with proper path matching
+// Store and router instances
+const route = useRoute()
+const loginStore = useLoginStore()
+
+// Menu selection logic
 const selectedKeys = computed(() => {
   const path = route.path
 
-  // Dashboard
-  if (path === '/') return ['dashboard']
+  // Route to menu key mapping
+  const routeMapping: Record<string, string> = {
+    '/': 'dashboard',
+    '/users': 'users-list',
+    '/users/customer': 'users-customer',
+    '/roles': 'role-list',
+    '/roles/permission': 'permission-list',
+    '/categories': 'categories-list',
+    '/categories/group': 'categories-group',
+    '/sizes': 'sizes-list',
+    '/sizes/group': 'size-group',
+    '/promotions/discounts': 'discounts',
+    '/products': 'products-list',
+    '/orders': 'orders-list',
+    '/reports/inventory': 'reports-inventory',
+    '/settings/profile': 'profile',
+    '/settings': 'settings'
+  }
 
-  // Deliveries
+  // Check for exact matches first
+  if (routeMapping[path]) {
+    return [routeMapping[path]]
+  }
+
+  // Check for path prefixes
   if (path.startsWith('/deliveries')) return ['deliveries']
-
-  // Categories
-  if (path === '/categories') return ['categories-list']
-  if (path === '/categories/group') return ['categories-group']
-
-  // Sizes
-  if (path === '/sizes') return ['sizes-list']
-  if (path === '/sizes/group') return ['size-group']
-
-  // Brands
   if (path.startsWith('/brands')) return ['brands']
-
-  // Promotions
-  if (path === '/promotions/discounts') return ['discounts']
-
-  // Banners
   if (path.startsWith('/banners')) return ['banners']
-
-  // Seasons
   if (path.startsWith('/seasons')) return ['seasons']
-
-  // Colors
   if (path.startsWith('/colors')) return ['colors']
-
-  // Users
-  if (path === '/users') return ['users-list']
-  if (path === '/users/add') return ['users-add']
-
-  // Roles
-  if (path === '/roles') return ['role-list']
-
-  // Products
-  if (path === '/products') return ['products-list']
-  if (path === '/products/add') return ['products-add']
-
-  // Orders
-  if (path === '/orders') return ['orders-list']
-  if (path === '/orders/pending') return ['orders-pending']
-  if (path === '/orders/complete') return ['orders-complete']
-
-  // Reports
-  if (path === '/reports/sales') return ['reports-sales']
-  if (path === '/reports/inventory') return ['reports-inventory']
-  if (path === '/reports/topsale') return ['reports-topsale']
-
-  // Settings
-  if (path === '/settings/general') return ['settings-general']
-  if (path === '/settings/profile') return ['settings-profile']
-  if (path === '/settings/security') return ['settings-security']
 
   return []
 })
 
-// Auto-open parent menu when child is selected
+// Auto-expand parent menus when child items are selected
 watch(selectedKeys, (newKeys) => {
   if (newKeys.length > 0) {
     const key = newKeys[0]
-
-    // Define parent-child relationships
+    
+    // Menu hierarchy mapping
     const menuHierarchy: Record<string, string> = {
       'categories-list': 'categories',
       'categories-group': 'categories',
@@ -330,21 +314,14 @@ watch(selectedKeys, (newKeys) => {
       'size-group': 'sizes',
       'discounts': 'promotions',
       'users-list': 'users',
-      'users-add': 'users',
+      'users-customer': 'users',
       'role-list': 'roles',
+      'permission-list': 'roles',
       'products-list': 'products',
-      'products-add': 'products',
       'orders-list': 'orders',
-      'orders-pending': 'orders',
-      'orders-complete': 'orders',
-      'reports-sales': 'reports',
-      'reports-inventory': 'reports',
-      'reports-topsale': 'reports',
-      'settings-general': 'settings',
-      'settings-profile': 'settings',
-      'settings-security': 'settings'
+      'reports-inventory': 'reports'
     }
-
+    
     const parentKey = menuHierarchy[key]
     if (parentKey && !openKeys.value.includes(parentKey)) {
       openKeys.value = [...openKeys.value, parentKey]
@@ -352,7 +329,7 @@ watch(selectedKeys, (newKeys) => {
   }
 }, { immediate: true })
 
-// Methods
+// Event handlers
 const handleCollapse = (isCollapsed: boolean) => {
   collapsed.value = isCollapsed
 }
@@ -373,39 +350,16 @@ const toggleSider = () => {
   }
 }
 
-// Logout functionality
+// Logout functionality using Pinia store
 const handleLogout = async () => {
+  if (loginStore.isSpinning) return // Prevent multiple logout attempts
+  
   try {
-    isLoggingOut.value = true
-    
-    // Make POST request to logout endpoint
-    const response = await $fetch('/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    
-    // Clear any stored authentication data
-    // Remove token from localStorage/cookies if you're using them
-    if (process.client) {
-      localStorage.removeItem('auth-token')
-      localStorage.removeItem('user-data')
-      // Or if using cookies
-      document.cookie = 'auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-    }
-    
-    // Show success message
+    await loginStore.fetchLogout()
     message.success('Logged out successfully')
-    
-    // Redirect to login page
-    await router.push('/login')
-    
   } catch (error) {
     console.error('Logout error:', error)
     message.error('Failed to logout. Please try again.')
-  } finally {
-    isLoggingOut.value = false
   }
 }
 </script>
@@ -427,7 +381,6 @@ const handleLogout = async () => {
   z-index: 20;
 }
 
-/* Ensure proper mobile responsiveness */
 @media (max-width: 1024px) {
   .ant-layout-sider {
     position: fixed !important;
@@ -438,15 +391,9 @@ const handleLogout = async () => {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
-
+  
   .ant-layout-sider:not(.ant-layout-sider-collapsed) {
     transform: translateX(0);
   }
-}
-
-/* Loading state for logout button */
-.ant-menu-item[loading] {
-  pointer-events: none;
-  opacity: 0.6;
 }
 </style>

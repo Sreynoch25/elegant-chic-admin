@@ -173,12 +173,14 @@
 </template>
 
 <script setup lang="ts">
-import type { Item, ItemFormState, ItemResponse, ApiResponse} from "~/types/items/item";
+import type { Item, ItemVariant,  ItemFormState, ItemResponse, ApiResponse} from "~/types/items/item";
 import type { Category, CategoryResponse } from "~/types/category/category";
 import type {  Brand, BrandResponse, } from "~/types/brand/brand";
 import type {  Season, SeasonResponse } from "~/types/season/season";
 import type {Size, SizeResponse} from "~/types/sizes/size"
 import type {Color, ColorResponse} from "~/types/colors/color"
+import type { UploadFile } from 'ant-design-vue';
+
 
 definePageMeta({
   layout: 'default',
@@ -440,7 +442,7 @@ const beforeUploadImage = (file: File, variantIndex: number) => {
     return false;
   }
 
-  // Store the file and update the file list for display
+  // Store the new file (this will replace any existing image)
   formState.value.variants[variantIndex].image = file;
   formState.value.variants[variantIndex].imageFileList = [{
     uid: file.name + Date.now(),
@@ -451,6 +453,7 @@ const beforeUploadImage = (file: File, variantIndex: number) => {
   return false; // Prevent automatic upload
 }
 
+
 // Variant management
 const addVariant = () => {
   formState.value.variants.push({
@@ -458,7 +461,7 @@ const addVariant = () => {
     size_id: '',
     quantity: 0,
     price: 0,
-    imageFileList: []
+    imageFileList: [] as UploadFile[]  
   });
 }
 
@@ -511,7 +514,7 @@ const resetForm = () => {
       size_id: '',
       quantity: 0,
       price: 0,
-      imageFileList: []
+      imageFileList: [] as UploadFile[]  
     }]
   }
   editingItemId.value = null
@@ -527,22 +530,33 @@ const editItem = (record: Record<string, any>) => {
   modalVisible.value = true
   editingItemId.value = item.id
 
+  // Map variants properly, preserving IDs and existing data
+  const mappedVariants: ItemVariant[] = item.variants.map(variant => ({
+    id: variant.id, // Preserve the variant ID
+    color_id: variant.color_id,
+    size_id: variant.size_id,
+    quantity: variant.quantity,
+    price: variant.price,
+    image: variant.image, // Keep as string URL initially
+    imageFileList: variant.image ? [{
+      uid: variant.id || Math.random().toString(),
+      name: 'image.jpg',
+      status: 'done' as const, // Fix: Use 'done' as const to match UploadFileStatus
+      url: variant.image as string
+    }] : []
+  }))
+
   formState.value = {
     name: item.name,
     description: item.description || '',
     category_id: item.category_id,
     brand_id: item.brand_id,
     season_id: item.season_id,
-    variants: item.variants.map(variant => ({
-      ...variant,
-      imageFileList: variant.image ? [{
-        uid: variant.id || Math.random().toString(),
-        name: 'image.jpg',
-        status: 'done',
-        url: variant.image as string
-      }] : []
-    }))
+    variants: mappedVariants
   }
+
+  console.log('Editing item:', item)
+  console.log('Form state variants:', formState.value.variants)
 }
 
 // Handle form submission
@@ -645,8 +659,6 @@ const createItem = async () => {
 
 // Update item function
 const updateItem = async () => {
-
-
   try {
     const formData = new FormData()
     formData.append('_method', 'PUT')
@@ -656,27 +668,43 @@ const updateItem = async () => {
     formData.append('brand_id', formState.value.brand_id)
     formData.append('season_id', formState.value.season_id)
 
+    // Handle variants with proper structure
     formState.value.variants.forEach((variant, index) => {
+      // Include variant ID if it exists (for existing variants)
+      if (variant.id) {
+        formData.append(`variants[${index}][id]`, variant.id)
+      }
+      
       formData.append(`variants[${index}][color_id]`, variant.color_id)
       formData.append(`variants[${index}][size_id]`, variant.size_id)
       formData.append(`variants[${index}][quantity]`, String(variant.quantity))
       formData.append(`variants[${index}][price]`, String(variant.price))
+      
+      // Handle image upload - only send new images
       if (variant.image instanceof File) {
         formData.append(`variants[${index}][image]`, variant.image)
       }
+      // If no new image but has existing image URL, you might want to preserve it
+      else if (typeof variant.image === 'string' && variant.image) {
+        formData.append(`variants[${index}][existing_image]`, variant.image)
+      }
     })
 
+    console.log('Updating item with ID:', editingItemId.value)
+    console.log('Form data variants:', formState.value.variants)
+
     const { data } = await useFetchDataApi<ApiResponse>(`/item/${editingItemId.value}`, {
-      method: 'POST',
+      method: 'POST', // Keep as POST since you're using _method override
       body: formData,
     })
 
-    if (data.value?.message) {
-      message.success(data.value.message)
+    if (data.value?.success) {
+      message.success(data.value.message || 'Item updated successfully')
     } else {
-      message.success('Item updated successfully')
+      throw new Error(data.value?.message || 'Failed to update item')
     }
   } catch (error: any) {
+    console.error('❌ Update Error:', error)
     message.error(error.message || 'Failed to update item')
     throw error
   }

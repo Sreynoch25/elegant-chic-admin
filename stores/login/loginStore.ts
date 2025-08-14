@@ -12,7 +12,6 @@ export const useLoginStore = defineStore('useLoginStore', {
       this.isSpinning = true;
 
       try {
-        console.log("hello fetch")
         const response = await useFetchDataApi<LoginResponse>('/login', {
           method: 'POST',
           body: {
@@ -20,9 +19,8 @@ export const useLoginStore = defineStore('useLoginStore', {
             password: this.user.password,
           }
         });
-        console.log("=====================", response)
-        const data = response.data;
 
+        const data = response.data;
         if (data && data.value) {
           const token = useCookie('accessToken');
           token.value = data.value.token;
@@ -30,18 +28,41 @@ export const useLoginStore = defineStore('useLoginStore', {
           navigateTo({ name: 'index' });
           return data.value;
         } else {
-          // If API returns with no expected data, treat as failure
           throw new Error('Login failed. No data returned.');
         }
-
       } catch (error: any) {
-        // Normalize and rethrow the error for caller to handle
         if (error?.response?.data) {
-          throw error.response.data; // Forward structured API error
+          throw error.response.data;
         } else {
           throw { error: error.message || "Unknown error" };
         }
+      } finally {
+        this.isSpinning = false;
+      }
+    },
 
+    // 🚀 Logout function
+    async fetchLogout() {
+      this.isSpinning = true;
+      try {
+        const token = useCookie('accessToken');
+
+        // Call backend logout (optional if you just want to clear token)
+        await useFetchDataApi('/logout', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token.value}`
+          }
+        });
+
+        // Clear cookie and reset store
+        token.value = null;
+        this.authenticated = false;
+        this.user = {} as loginTypes;
+
+        navigateTo({ name: 'login' });
+      } catch (error: any) {
+        console.error('Logout failed:', error);
       } finally {
         this.isSpinning = false;
       }

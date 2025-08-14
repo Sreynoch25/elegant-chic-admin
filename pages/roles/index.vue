@@ -1,113 +1,94 @@
 <template>
-  <div class="permissions-admin">
+  <div class="roles-management">
     <div class="page-header">
-      <h1 class="page-title">Permissions Management</h1>
-      <a-button type="primary" @click="showCreateModal" :loading="loading">
-        <template #icon>
-          <PlusOutlined />
-        </template>
-        Add Permission
+      <h1>Roles Management</h1>
+      <a-button type="primary" @click="showCreateModal" :icon="h(PlusOutlined)">
+        Create Role
       </a-button>
     </div>
 
-    <!-- Statistics Cards -->
-    <a-row :gutter="16" class="stats-row">
-      <a-col :span="6">
-        <a-card class="stat-card">
-          <a-statistic title="Total Permissions" :value="totalPermissions" />
-        </a-card>
-      </a-col>
-      <a-col :span="6">
-        <a-card class="stat-card">
-          <a-statistic title="View Permissions" :value="permissions.view?.length || 0" />
-        </a-card>
-      </a-col>
-      <a-col :span="6">
-        <a-card class="stat-card">
-          <a-statistic title="Manage Permissions" :value="permissions.manage?.length || 0" />
-        </a-card>
-      </a-col>
-      <a-col :span="6">
-        <a-card class="stat-card">
-          <a-statistic title="Create Permissions" :value="permissions.create?.length || 0" />
-        </a-card>
-      </a-col>
-    </a-row>
+    <!-- Roles Table -->
+    <a-card>
+      <a-table :columns="columns" :data-source="roles" :loading="loading" row-key="id"
+        :pagination="{ pageSize: 10, showSizeChanger: true }">
+        <!-- Role Name -->
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'name'">
+            <a-tag :color="getRoleColor(record.name)">
+              {{ record.name }}
+            </a-tag>
+          </template>
 
-    <!-- Permissions Tables by Category -->
-    <div class="permissions-content">
-      <a-tabs v-model:activeKey="activeTab" type="card">
-        <a-tab-pane v-for="(permList, category) in permissions" :key="category" :tab="capitalize(category)">
-          <a-table
-            :columns="columns"
-            :data-source="permList"
-            :loading="loading"
-            :pagination="{ pageSize: 10 }"
-            row-key="id"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'name'">
-                <a-tag color="blue">{{ record.name }}</a-tag>
-              </template>
-              <template v-else-if="column.key === 'guard_name'">
-                <a-badge :text="record.guard_name" color="green" />
-              </template>
-              <template v-else-if="column.key === 'created_at'">
-                {{ formatDate(record.created_at) }}
-              </template>
-              <template v-else-if="column.key === 'updated_at'">
-                {{ formatDate(record.updated_at) }}
-              </template>
-              <template v-else-if="column.key === 'actions'">
-                <a-space>
-                  <a-button type="primary" size="small" @click="editPermission(record)">
-                    <template #icon>
-                      <EditOutlined />
-                    </template>
-                    Edit
-                  </a-button>
-                  <a-popconfirm
-                    title="Are you sure you want to delete this permission?"
-                    ok-text="Yes"
-                    cancel-text="No"
-                    @confirm="deletePermission(record.id)"
-                  >
-                    <a-button type="primary" danger size="small">
-                      <template #icon>
-                        <DeleteOutlined />
-                      </template>
-                      Delete
-                    </a-button>
-                  </a-popconfirm>
-                </a-space>
-              </template>
-            </template>
-          </a-table>
-        </a-tab-pane>
-      </a-tabs>
-    </div>
+          <!-- Permissions -->
+          <template v-else-if="column.key === 'permissions'">
+            <div class="permissions-display">
+              <a-tag v-for="permission in record.permissions.slice(0, 3)" :key="permission" size="small">
+                {{ permission }}
+              </a-tag>
+              <a-tag v-if="record.permissions.length > 3" size="small" color="blue">
+                +{{ record.permissions.length - 3 }} more
+              </a-tag>
+            </div>
+          </template>
+
+          <!-- Permissions Count -->
+          <template v-else-if="column.key === 'permissions_count'">
+            <a-badge :count="record.permissions_count" :number-style="{ backgroundColor: '#52c41a' }" />
+          </template>
+
+          <!-- Users Count -->
+          <template v-else-if="column.key === 'users_count'">
+            <a-badge :count="record.users_count" />
+          </template>
+
+          <!-- Created Date -->
+          <template v-else-if="column.key === 'created_at'">
+            {{ formatDate(record.created_at) }}
+          </template>
+
+          <!-- Actions -->
+          <template v-else-if="column.key === 'actions'">
+            <a-space>
+              <a-tooltip title="Edit Role">
+                <a-button type="text" :icon="h(EditOutlined)" @click="() => editRole(record)" />
+              </a-tooltip>
+              <a-tooltip title="Delete Role">
+                <a-button type="text" danger :icon="h(DeleteOutlined)" @click="() => deleteRole(record)"
+                  :disabled="record.name === 'super_admin'" />
+              </a-tooltip>
+            </a-space>
+          </template>
+        </template>
+      </a-table>
+    </a-card>
 
     <!-- Create/Edit Modal -->
-    <a-modal
-      v-model:open="modalVisible"
-      :title="isEdit ? 'Edit Permission' : 'Create Permission'"
-      :confirm-loading="submitting"
-      @ok="handleSubmit"
-      @cancel="resetModal"
-    >
-      <a-form :model="form" layout="vertical" ref="formRef">
-        <a-form-item
-          label="Permission Name"
-          name="name"
-          :rules="[{ required: true, message: 'Please enter permission name!' }]"
-        >
-          <a-input v-model:value="form.name" placeholder="e.g., view products" />
+    <a-modal v-model:open="modalVisible" :title="isEditing ? 'Edit Role' : 'Create Role'" :confirm-loading="submitting"
+      @ok="handleSubmit" @cancel="resetModal" width="800px">
+      <a-form ref="formRef" :model="formData" :rules="rules" layout="vertical" class="role-form">
+        <a-form-item label="Role Name" name="name">
+          <a-input v-model:value="formData.name" placeholder="Enter role name" />
         </a-form-item>
-        <a-form-item label="Guard Name" name="guard_name">
-          <a-select v-model:value="form.guard_name" placeholder="Select guard">
-            <a-select-option value="admin">Admin</a-select-option>
-            <a-select-option value="user">User</a-select-option>
-          </a-select>
+
+        <a-form-item label="Permissions" name="permissions">
+          <div class="permissions-section">
+            <a-space direction="vertical" style="width: 100%">
+              <div class="permissions-actions">
+                <a-button size="small" @click="selectAllPermissions">Select All</a-button>
+                <a-button size="small" @click="clearAllPermissions">Clear All</a-button>
+              </div>
+
+              <a-spin :spinning="permissionsLoading">
+                <div class="permissions-grid">
+                  <div v-for="category in permissionCategories" :key="category.name" class="permission-category">
+                    <h4>{{ category.label }}</h4>
+                    <a-checkbox-group :value="categoryPermissions(category.name)"
+                      @change="val => updatePermissions(category.name, val)" :options="category.permissions" />
+                  </div>
+                </div>
+              </a-spin>
+            </a-space>
+          </div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -115,91 +96,78 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
-
-interface Permission {
-  id: number
-  name: string
-  guard_name: string
-  created_at: string
-  updated_at: string
-}
-
-interface PermissionsResponse {
-  success: boolean
-  message: string
-  status_code: number
-  data: {
-    manage: Permission[]
-    view: Permission[]
-    create: Permission[]
-    edit: Permission[]
-    delete: Permission[]
-    update: Permission[]
-    export: Permission[]
-  }
-}
-
-interface ApiResponse<T = any> {
-  success: boolean
-  message: string
-  status_code: number
-  data?: T
-}
-
-interface PermissionForm {
-  name: string
-  guard_name: string
-}
+import { ref, reactive, onMounted, h, computed } from 'vue'
+import { message, Modal } from 'ant-design-vue'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined
+} from '@ant-design/icons-vue'
+import type { TableColumnsType, FormInstance } from 'ant-design-vue'
+import type { Role, Response, Permission, PermissionOption, PermissionCategory } from "~/types/roles/role";
+import type { CheckboxValueType } from 'ant-design-vue/es/checkbox/interface';
 
 // Reactive data
 const loading = ref(false)
-const submitting = ref(false)
+const permissionsLoading = ref(false)
 const modalVisible = ref(false)
-const isEdit = ref(false)
-const activeTab = ref('view')
-const formRef = ref()
-const editingId = ref<number | null>(null)
+const isEditing = ref(false)
+const submitting = ref(false)
+const roles = ref<Role[]>([])
+const availablePermissions = ref<Permission[]>([])
+const formRef = ref<FormInstance>()
 
-const permissions = reactive<Record<string, Permission[]>>({
-  manage: [],
-  view: [],
-  create: [],
-  edit: [],
-  delete: [],
-  update: [],
-  export: []
-})
-
-const form = reactive<PermissionForm>({
+// Form data
+const formData = reactive({
+  id: undefined as number | undefined,
   name: '',
-  guard_name: 'admin'
+  permissions: [] as string[]
 })
 
-// Computed
-const totalPermissions = computed(() => {
-  return Object.values(permissions).reduce((total, list) => total + list.length, 0)
-})
+// Returns permissions in this category
+const categoryPermissions = (categoryName: string) => {
+  return formData.permissions.filter(p => p.startsWith(categoryName + '.'))
+}
+
+// Update permissions when a category changes
+const updatePermissions = (categoryName: string, selected: CheckboxValueType[]) => {
+  // Remove old permissions of this category
+  formData.permissions = formData.permissions.filter(
+    p => !p.startsWith(categoryName + '.')
+  )
+
+  // Add new ones, cast to string
+  formData.permissions.push(...selected.map(String))
+}
+
 
 // Table columns
-const columns = [
+const columns: TableColumnsType = [
   {
-    title: 'ID',
-    dataIndex: 'id',
-    key: 'id',
-    width: 80
-  },
-  {
-    title: 'Name',
+    title: 'Role Name',
     dataIndex: 'name',
-    key: 'name'
+    key: 'name',
+    width: 150
   },
   {
-    title: 'Guard',
-    dataIndex: 'guard_name',
-    key: 'guard_name',
-    width: 120
+    title: 'Permissions',
+    dataIndex: 'permissions',
+    key: 'permissions',
+    width: 300
+  },
+  {
+    title: 'Permissions Count',
+    dataIndex: 'permissions_count',
+    key: 'permissions_count',
+    width: 120,
+    align: 'center'
+  },
+  {
+    title: 'Users Count',
+    dataIndex: 'users_count',
+    key: 'users_count',
+    width: 100,
+    align: 'center'
   },
   {
     title: 'Created At',
@@ -208,291 +176,301 @@ const columns = [
     width: 150
   },
   {
-    title: 'Updated At',
-    dataIndex: 'updated_at',
-    key: 'updated_at',
-    width: 150
-  },
-  {
     title: 'Actions',
     key: 'actions',
-    width: 150
+    width: 120,
+    align: 'center'
   }
 ]
 
-// API functions
+// Form validation rules
+const rules = {
+  name: [
+    { required: true, message: 'Please enter role name', trigger: 'blur' as const },
+    { min: 2, max: 50, message: 'Role name must be between 2-50 characters', trigger: 'blur' as const }
+  ],
+  permissions: [
+    { required: true, message: 'Please select at least one permission', trigger: 'change' as const, type: 'array' as const, min: 1 }
+  ]
+}
+
+// Computed property to dynamically build permission categories from API data
+const permissionCategories = computed((): PermissionCategory[] => {
+  const categories: Record<string, PermissionOption[]> = {}
+
+  // Group permissions by category (prefix before the dot)
+  availablePermissions.value.forEach(permission => {
+    const [category, action] = permission.name.split('.')
+    if (!categories[category]) {
+      categories[category] = []
+    }
+
+    // Create a readable label for the permission
+    const actionLabel = action.charAt(0).toUpperCase() + action.slice(1)
+    const categoryLabel = category.charAt(0).toUpperCase() + category.slice(1)
+
+    categories[category].push({
+      label: `${actionLabel} ${categoryLabel}`,
+      value: permission.name
+    })
+  })
+
+  // Convert to the expected format and sort categories
+  const categoryMappings: Record<string, string> = {
+    dashboard: 'Dashboard',
+    banner: 'Banner Management',
+    category: 'Category Management',
+    customer: 'Customer Management',
+    item: 'Item Management',
+    order: 'Order Management',
+    payment: 'Payment Management',
+    promotion: 'Promotion Management',
+    delivery: 'Delivery Management',
+    user: 'User Management',
+    role: 'Role Management',
+    settings: 'Settings',
+    website: 'Website Management'
+  }
+
+  return Object.entries(categories)
+    .map(([categoryName, permissions]) => ({
+      name: categoryName,
+      label: categoryMappings[categoryName] || categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
+      permissions: permissions.sort((a, b) => a.label.localeCompare(b.label))
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
+// Methods
 const fetchPermissions = async () => {
-  loading.value = true
+  permissionsLoading.value = true
   try {
-    const { data } = await useFetchDataApi<PermissionsResponse>('/roles/permissions/all')
-    
-    // Access the actual response data from the reactive ref
-    const response = unref(data)
-    
-    if (response && response.success) {
-      Object.assign(permissions, response.data)
-    } else {
-      message.error('Failed to fetch permissions')
+    const response = await useFetchDataApi('/permissions') as { data: { value: Response<Permission[]> } }
+    if (response.data.value && response.data.value.success) {
+      availablePermissions.value = response.data.value.data || []
     }
   } catch (error) {
-    console.error('Error fetching permissions:', error)
-    message.error('Error fetching permissions')
+    message.error('Failed to fetch permissions')
+    console.error(error)
+  } finally {
+    permissionsLoading.value = false
+  }
+}
+
+const fetchRoles = async () => {
+  loading.value = true
+  try {
+    const response = await useFetchDataApi('/roles') as { data: { value: Response<Role[]> } }
+    if (response.data.value && response.data.value.success) {
+      roles.value = response.data.value.data || []
+    }
+  } catch (error) {
+    message.error('Failed to fetch roles')
+    console.error(error)
   } finally {
     loading.value = false
   }
 }
 
-const createPermission = async (formData: PermissionForm) => {
-  try {
-    const { data } = await useFetchDataApi<ApiResponse<Permission>>('/permissions', {
-      method: 'POST',
-      body: formData
-    })
-    
-    // Access the actual response data from the reactive ref
-    const response = unref(data)
-    
-    if (response && response.success) {
-      message.success('Permission created successfully')
-      await fetchPermissions()
-      return true
-    } else {
-      message.error(response?.message || 'Failed to create permission')
-      return false
-    }
-  } catch (error) {
-    console.error('Error creating permission:', error)
-    message.error('Error creating permission')
-    return false
-  }
-}
-
-const updatePermission = async (id: number, formData: PermissionForm) => {
-  try {
-    const { data } = await useFetchDataApi<ApiResponse<Permission>>(`/permissions/${id}`, {
-      method: 'PUT',
-      body: formData
-    })
-    
-    // Access the actual response data from the reactive ref
-    const response = unref(data)
-    
-    if (response && response.success) {
-      message.success('Permission updated successfully')
-      await fetchPermissions()
-      return true
-    } else {
-      message.error(response?.message || 'Failed to update permission')
-      return false
-    }
-  } catch (error) {
-    console.error('Error updating permission:', error)
-    message.error('Error updating permission')
-    return false
-  }
-}
-
-const deletePermission = async (id: number) => {
-  try {
-    const { data } = await useFetchDataApi<ApiResponse>(`/permissions/${id}`, {
-      method: 'DELETE'
-    })
-    
-    // Access the actual response data from the reactive ref
-    const response = unref(data)
-    
-    if (response && response.success) {
-      message.success('Permission deleted successfully')
-      await fetchPermissions()
-    } else {
-      message.error(response?.message || 'Failed to delete permission')
-    }
-  } catch (error) {
-    console.error('Error deleting permission:', error)
-    message.error('Error deleting permission')
-  }
-}
-
-// Helper functions
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString()
-}
-
-const capitalize = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1)
-}
-
-// Modal functions
-const showCreateModal = () => {
-  isEdit.value = false
+const showCreateModal = async () => {
+  isEditing.value = false
   modalVisible.value = true
   resetForm()
+
+  // Fetch permissions when modal opens if not already loaded
+  if (availablePermissions.value.length === 0) {
+    await fetchPermissions()
+  }
 }
 
-const editPermission = (record: Record<string, any>) => {
-  // Type guard function to check if record has all required Permission properties
-  const isValidPermission = (obj: any): obj is Permission => {
-    return obj && 
-           typeof obj.id === 'number' &&
-           typeof obj.name === 'string' &&
-           typeof obj.guard_name === 'string' &&
-           typeof obj.created_at === 'string' &&
-           typeof obj.updated_at === 'string'
-  }
-  
-  if (!isValidPermission(record)) {
-    console.error('Invalid permission object:', record)
-    message.error('Invalid permission data')
-    return
-  }
-  
-  isEdit.value = true
-  editingId.value = record.id
-  form.name = record.name
-  form.guard_name = record.guard_name
+const editRole = async (role: Record<string, any>) => {
+  const roleData = role as Role
+  isEditing.value = true
   modalVisible.value = true
-}
+  formData.id = roleData.id
+  formData.name = roleData.name
+  formData.permissions = [...roleData.permissions]
 
-const resetModal = () => {
-  modalVisible.value = false
-  resetForm()
-  editingId.value = null
-  isEdit.value = false
-}
-
-const resetForm = () => {
-  form.name = ''
-  form.guard_name = 'admin'
-  if (formRef.value) {
-    formRef.value.resetFields()
+  // Fetch permissions when modal opens if not already loaded
+  if (availablePermissions.value.length === 0) {
+    await fetchPermissions()
   }
 }
 
 const handleSubmit = async () => {
   try {
-    await formRef.value.validate()
+    await formRef.value?.validate()
     submitting.value = true
-    
-    let success = false
-    if (isEdit.value && editingId.value) {
-      success = await updatePermission(editingId.value, form)
-    } else {
-      success = await createPermission(form)
+
+    const payload = {
+      name: formData.name,
+      permissions: formData.permissions
     }
-    
-    if (success) {
-      resetModal()
+
+    let response: any
+
+    if (isEditing.value && formData.id) {
+      // Update role
+       response = await useFetchDataApi(`/roles/${formData.id}`, {
+        method: 'PUT',
+        body: payload
+      }) 
+    } else {
+      // Create role
+      response = await useFetchDataApi('/roles', {
+        method: 'POST',
+        body: payload
+      }) 
+    }
+
+    if (response.data.value.success) {
+      message.success(response.data.value.message || (isEditing.value ? 'Role updated successfully' : 'Role created successfully'))
+      modalVisible.value = false
+      await fetchRoles()
     }
   } catch (error) {
-    console.error('Form validation failed:', error)
+    message.error(isEditing.value ? 'Failed to update role' : 'Failed to create role')
+    console.error(error)
   } finally {
     submitting.value = false
   }
 }
 
+const deleteRole = (role: any) => {
+  const roleData = role as Role
+  Modal.confirm({
+    title: 'Delete Role',
+    content: `Are you sure you want to delete the role "${roleData.name}"?`,
+    okText: 'Delete',
+    okType: 'danger',
+    cancelText: 'Cancel',
+    onOk: async () => {
+      try {
+        const response = await useFetchDataApi(`/roles/${roleData.id}`, { method: 'DELETE' }) as Response<any>
+        if (response.data.value.success) {
+          message.success(response.data.value.message || 'Role deleted successfully')
+          await fetchRoles()
+        }
+      } catch (error) {
+        message.error('Failed to delete role')
+        console.error(error)
+      }
+    }
+  })
+}
+
+const resetModal = () => {
+  modalVisible.value = false
+  resetForm()
+}
+
+const resetForm = () => {
+  formData.id = undefined
+  formData.name = ''
+  formData.permissions = []
+  formRef.value?.clearValidate()
+}
+
+const selectAllPermissions = () => {
+  formData.permissions = availablePermissions.value.map(p => p.name)
+}
+
+const clearAllPermissions = () => {
+  formData.permissions = []
+}
+
+const getRoleColor = (roleName: string) => {
+  const colors: Record<string, string> = {
+    super_admin: 'red',
+    admin: 'blue',
+    customer: 'green',
+    viewer: 'orange'
+  }
+  return colors[roleName] || 'default'
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
 // Lifecycle
 onMounted(() => {
-  fetchPermissions()
+  fetchRoles()
 })
 </script>
 
 <style scoped>
-.permissions-admin {
+.roles-management {
   padding: 24px;
-  background-color: #f5f5f5;
-  min-height: 100vh;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-
-}
-
-.page-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #1890ff;
-}
-
-.stats-row {
   margin-bottom: 24px;
 }
 
-.stat-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
-
-.permissions-content {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.ant-tabs-card .ant-tabs-tab) {
-  border-radius: 6px 6px 0 0;
-  background: #fafafa;
-  border-color: #d9d9d9;
-}
-
-:deep(.ant-tabs-card .ant-tabs-tab-active) {
-  background: white;
-  border-bottom-color: white;
-}
-
-:deep(.ant-table-thead > tr > th) {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #495057;
-}
-
-:deep(.ant-btn-primary) {
-  background: #1890ff;
-  border-color: #1890ff;
-  border-radius: 6px;
-}
-
-:deep(.ant-btn-primary:hover) {
-  background: #40a9ff;
-  border-color: #40a9ff;
-}
-
-:deep(.ant-modal .ant-modal-header) {
-  border-radius: 6px 6px 0 0;
-}
-
-:deep(.ant-modal .ant-modal-content) {
-  border-radius: 6px;
-}
-
-:deep(.ant-tag) {
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-:deep(.ant-badge) {
-  font-weight: 500;
-}
-
-:deep(.ant-statistic-title) {
-  color: #8c8c8c;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-:deep(.ant-statistic-content) {
-  color: #1890ff;
+.page-header h1 {
+  margin: 0;
   font-size: 24px;
   font-weight: 600;
+}
+
+.permissions-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-form {
+  margin-top: 16px;
+}
+
+.permissions-section {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.permissions-actions {
+  margin-bottom: 16px;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.permission-category {
+  background: white;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+}
+
+.permission-category h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1890ff;
+  border-bottom: 1px solid #e8e8e8;
+  padding-bottom: 8px;
+}
+
+.permission-category :deep(.ant-checkbox-group) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.permission-category :deep(.ant-checkbox-wrapper) {
+  margin-right: 0;
 }
 </style>
