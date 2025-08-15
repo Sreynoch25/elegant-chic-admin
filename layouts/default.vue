@@ -144,8 +144,6 @@
             <NuxtLink to="/reports/inventory">Inventory Report</NuxtLink>
           </a-menu-item>
         </a-sub-menu>
-
-        {{ adminProfile }}
       </a-menu>
     </a-layout-sider>
 
@@ -168,28 +166,6 @@
 
         <!-- Right Header Content -->
         <div class="flex items-center gap-4">
-          <!-- Notification Dropdown -->
-          <a-dropdown placement="bottomRight">
-            <a-badge dot>
-              <bell-outlined class="text-xl cursor-pointer" />
-            </a-badge>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item key="notification-1">
-                  <div class="py-1">
-                    <div class="font-medium">New Order Received</div>
-                    <div class="text-xs text-gray-500">5 minutes ago</div>
-                  </div>
-                </a-menu-item>
-                <a-menu-item key="notification-2">
-                  <div class="py-1">
-                    <div class="font-medium">Low Stock Alert</div>
-                    <div class="text-xs text-gray-500">1 hour ago</div>
-                  </div>
-                </a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
 
           <!-- User Avatar Dropdown -->
           <a-dropdown>
@@ -203,10 +179,6 @@
                   <a-spin :spinning="loading" size="small">
                     Profile
                   </a-spin>
-                </a-menu-item>
-
-                <a-menu-item key="settings">
-                  <NuxtLink to="/settings">Settings</NuxtLink>
                 </a-menu-item>
 
                 <a-menu-divider />
@@ -566,7 +538,6 @@ const updateProfile = async () => {
       method: 'POST',
       body: formData
     })
-console.log("data.value?.status=================", data.value?.status, "--------", data);
     if (data.value?.data) {
       await fetchAdminProfile()
       message.success('Profile updated successfully!')
@@ -625,11 +596,10 @@ const onImageChange = async (event: Event) => {
       body: formData
     })
 
-    if (data.value?.status === 200) {
+    if (data.value?.data) {
       await fetchAdminProfile()
       const updatedProfile = data.value.data
-      adminProfile.value = null 
-      await nextTick()
+     
       adminProfile.value = updatedProfile
 
       message.success('Profile image updated successfully!')
