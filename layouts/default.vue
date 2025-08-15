@@ -389,7 +389,6 @@ watch(selectedKeys, (newKeys) => {
   }
 }, { immediate: true })
 
-// Event handlers
 const handleCollapse = (isCollapsed: boolean) => {
   collapsed.value = isCollapsed
 }
