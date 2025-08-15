@@ -290,13 +290,6 @@ const quickActions = computed(() => [
         link: '/orders'
     },
     {
-        key: 'settings',
-        title: 'Settings',
-        icon: SettingOutlined,
-        color: '#06b6d4',
-        link: '/settings'
-    },
-    {
         key: 'reports',
         title: 'Reports',
         icon: FileTextOutlined,
@@ -310,13 +303,6 @@ const quickActions = computed(() => [
         color: '#10b981',
         link: '/promotions/discounts'
     },
-    {
-        key: 'gallery',
-        title: 'Gallery',
-        icon: PictureOutlined,
-        color: '#ef4444',
-        link: '/gallery'
-    }
 ])
 
 const dashboardData = ref<DashboardData | null>(null)
