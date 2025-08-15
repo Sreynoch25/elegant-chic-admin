@@ -14,10 +14,6 @@
               autocomplete="current-password" />
           </a-form-item>
 
-          <div v-if="errorMessage" style="color: red; margin-bottom: 16px;">
-            {{ errorMessage }}
-          </div>
-
           <a-form-item>
             <a-row justify="space-between" align="middle">
               <a-col>
@@ -32,77 +28,166 @@
           </a-form-item>
 
           <a-form-item>
-            <a-button html-type="submit" block class="!font-bold custom-dark-btn">
-              Log In
+            <a-button 
+              html-type="submit" 
+              block 
+              class="!font-bold custom-dark-btn"
+              :loading="isLoading"
+              :disabled="isLoading"
+            >
+              {{ isLoading ? 'Logging in...' : 'Log In' }}
             </a-button>
           </a-form-item>
         </a-form>
       </a-card>
+    </div>
+
+    <!-- Custom Snackbar/Toast -->
+    <div v-if="snackbar.show" :class="['snackbar', `snackbar-${snackbar.type}`]">
+      <div class="snackbar-content">
+        <span class="snackbar-icon">
+          <span v-if="snackbar.type === 'success'">✓</span>
+          <span v-else-if="snackbar.type === 'error'">✕</span>
+          <span v-else-if="snackbar.type === 'loading'" class="loading-spinner"></span>
+          <span v-else>ℹ</span>
+        </span>
+        <span class="snackbar-message">{{ snackbar.message }}</span>
+        <button @click="closeSnackbar" class="snackbar-close">×</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useLoginStore } from '~/stores/login/loginStore';
+import { useRouter } from 'vue-router';
 
 definePageMeta({
   layout: 'login',
 })
 
 const loginStore = useLoginStore();
+const router = useRouter();
 
-const errorMessage = ref('');
-const snackbar = ref(false);
-const messageInvalid = ref('');
+const isLoading = ref(false);
 const errors = ref<Partial<Error>>({});
 
 // Bind login form inputs
 const username = ref('');
 const password = ref('');
 
+// Snackbar state
+const snackbar = ref({
+  show: false,
+  message: '',
+  type: 'info' as 'success' | 'error' | 'info' | 'loading'
+});
+
+let snackbarTimeout: NodeJS.Timeout | null = null;
+
 // Watch and sync with store.user
 watchEffect(() => {
-  loginStore.user.email = username.value; // if login by email
+  loginStore.user.email = username.value;
   loginStore.user.password = password.value;
 });
 
-const login = async (e: Event) => {
-  e.preventDefault();
+// Snackbar methods
+const showSnackbar = (message: string, type: 'success' | 'error' | 'info' | 'loading' = 'info', duration: number = 4000) => {
+  // Clear existing timeout
+  if (snackbarTimeout) {
+    clearTimeout(snackbarTimeout);
+  }
 
-  errors.value = {};
-  errorMessage.value = '';
-  snackbar.value = false;
+  snackbar.value = {
+    show: true,
+    message,
+    type
+  };
 
-  try {
-    if (!loginStore.user.email || !loginStore.user.password) {
-      if (!loginStore.user.email) {
-        errors.value.message = "Username is required";
-      }
-      if (!loginStore.user.password) {
-        errors.value.message = "Password is required";
-      }
-      snackbar.value = true;
-      return;
-    }
-    const response = await loginStore.fetchLogin();
-    if (response && response.data) {
-    } else {
-      messageInvalid.value = "Login failed. Please try again.";
-      snackbar.value = true;
-    }
-  } catch (error: any) {
-    if (error?.errors) {
-      errors.value = error.errors;
-    } else if (error?.error) {
-      messageInvalid.value = error.error;
-    } else {
-      messageInvalid.value = "An unexpected error occurred.";
-    }
-    snackbar.value = true;
+  // Auto-close snackbar (except for loading type)
+  if (type !== 'loading' && duration > 0) {
+    snackbarTimeout = setTimeout(() => {
+      closeSnackbar();
+    }, duration);
   }
 };
-</script>
 
+const closeSnackbar = () => {
+  snackbar.value.show = false;
+  if (snackbarTimeout) {
+    clearTimeout(snackbarTimeout);
+    snackbarTimeout = null;
+  }
+};
+
+const validateForm = () => {
+  // Email validation
+  if (!username.value.trim()) {
+    showSnackbar("Username is required", 'error');
+    return false;
+  }
+  
+  // Password validation
+  if (!password.value.trim()) {
+    showSnackbar("Password is required", 'error');
+    return false;
+  }
+  
+  return true;
+};
+
+const login = async (e: Event) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+
+  isLoading.value = true;
+  closeSnackbar();
+
+  // Show loading snackbar
+  showSnackbar("Logging in...", 'loading', 0);
+
+  try {
+    const response = await loginStore.fetchLogin();
+    
+    if (response && response.data) {
+      // Success case
+      closeSnackbar();
+      showSnackbar("Login successful! Redirecting...", 'success', 3000);
+      
+      // Optional: Redirect after success message
+      setTimeout(() => {
+        // Replace '/dashboard' with your desired redirect route
+        router.push('/dashboard');
+      }, 1500);
+      
+    } else {
+      // Failed response
+      closeSnackbar();
+      showSnackbar("Invalid username or password. Please try again.", 'error');
+    }
+    
+  } catch (error: any) {
+    console.error('Login error:', error);
+    closeSnackbar();
+    
+    // Simple error message for all login failures
+    showSnackbar("Username or password wrong", 'error', 4000);
+    
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Clear snackbar when component unmounts
+onUnmounted(() => {
+  if (snackbarTimeout) {
+    clearTimeout(snackbarTimeout);
+  }
+});
+</script>
 
 <style scoped lang="css">
 .login-container {
@@ -158,6 +243,113 @@ const login = async (e: Event) => {
   text-decoration: underline;
 }
 
+/* Snackbar Styles */
+.snackbar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  min-width: 300px;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  font-weight: 500;
+}
+
+.snackbar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.snackbar-message {
+  flex: 1;
+  font-size: 14px;
+}
+
+.snackbar-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.snackbar-close:hover {
+  opacity: 1;
+}
+
+.snackbar-success {
+  background-color: rgba(34, 197, 94, 0.9);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #ffffff;
+}
+
+.snackbar-error {
+  background-color: rgba(239, 68, 68, 0.9);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+}
+
+.snackbar-info {
+  background-color: rgba(59, 130, 246, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+.snackbar-loading {
+  background-color: rgba(59, 130, 246, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #ffffff;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ant-input,
 .ant-input-password {
   background-color: rgba(0, 0, 0, 0.2) !important;
@@ -178,10 +370,17 @@ const login = async (e: Event) => {
   background-color: rgba(0, 0, 0, 0.8) !important;
   border-color: transparent !important;
   color: #fff !important;
+  transition: all 0.3s ease;
 }
 
-.custom-dark-btn:hover {
+.custom-dark-btn:hover:not(:disabled) {
   background-color: rgba(0, 0, 0, 1) !important;
+  transform: translateY(-1px);
+}
+
+.custom-dark-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .checkbox-label {
@@ -195,5 +394,16 @@ const login = async (e: Event) => {
 
 :deep(.custom-checkbox .ant-checkbox-inner) {
   border-radius: 4px;
+}
+
+/* Mobile responsiveness for snackbar */
+@media (max-width: 640px) {
+  .snackbar {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
 }
 </style>
