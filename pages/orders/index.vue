@@ -7,69 +7,9 @@
             <template #icon><ReloadOutlined /></template>
             Refresh
           </a-button>
-          <a-button type="primary" @click="showExportModal = true">
-            <template #icon><ExportOutlined /></template>
-            Export
-          </a-button>
         </div>
       </template>
     </a-page-header>
-
-    <!-- Filters Section -->
-    <a-card class="filter-card" style="margin-bottom: 16px;">
-      <a-row :gutter="16">
-        <a-col :span="6">
-          <a-input
-            v-model:value="filters.search"
-            placeholder="Search order number, customer name..."
-            allow-clear
-            @pressEnter="handleSearch"
-          >
-            <template #prefix><SearchOutlined /></template>
-          </a-input>
-        </a-col>
-        <a-col :span="4">
-          <a-select
-            v-model:value="filters.status"
-            placeholder="Order Status"
-            allow-clear
-            style="width: 100%"
-            @change="handleSearch"
-          >
-            <a-select-option value="pending">Pending</a-select-option>
-            <a-select-option value="confirmed">Confirmed</a-select-option>
-            <a-select-option value="processing">Processing</a-select-option>
-            <a-select-option value="shipped">Shipped</a-select-option>
-            <a-select-option value="delivered">Delivered</a-select-option>
-            <a-select-option value="cancelled">Cancelled</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="4">
-          <a-select
-            v-model:value="filters.paymentStatus"
-            placeholder="Payment Status"
-            allow-clear
-            style="width: 100%"
-            @change="handleSearch"
-          >
-            <a-select-option value="pending">Pending</a-select-option>
-            <a-select-option value="paid">Paid</a-select-option>
-            <a-select-option value="failed">Failed</a-select-option>
-            <a-select-option value="refunded">Refunded</a-select-option>
-          </a-select>
-        </a-col>
-        <a-col :span="6">
-          <a-range-picker
-            v-model:value="filters.dateRange"
-            style="width: 100%"
-            @change="handleSearch"
-          />
-        </a-col>
-        <a-col :span="4">
-          <a-button type="default" @click="clearFilters">Clear Filters</a-button>
-        </a-col>
-      </a-row>
-    </a-card>
 
     <!-- Orders Table -->
     <a-card>
@@ -170,7 +110,7 @@
                     <CheckOutlined /> Confirm Order
                   </a-menu-item>
                   <a-menu-item key="ship" v-if="record.order_status === 'confirmed'">
-                    <TruckOutlined /> Mark as Shipped
+                   Mark as Shipped
                   </a-menu-item>
                   <a-menu-item key="deliver" v-if="record.order_status === 'shipped'">
                     <CheckCircleOutlined /> Mark as Delivered
