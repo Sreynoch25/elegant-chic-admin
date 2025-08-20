@@ -171,16 +171,15 @@
     </a-modal>
   </div>
 </template>
-
 <script setup lang="ts">
-import type { Item, ItemVariant,  ItemFormState, ItemResponse, ApiResponse} from "~/types/items/item";
+import type { Item, ItemVariant, ItemFormState, ItemResponse, ApiResponse, UploadFileStatus} from "~/types/items/item";
 import type { Category, CategoryResponse } from "~/types/category/category";
-import type {  Brand, BrandResponse, } from "~/types/brand/brand";
-import type {  Season, SeasonResponse } from "~/types/season/season";
-import type {Size, SizeResponse} from "~/types/sizes/size"
-import type {Color, ColorResponse} from "~/types/colors/color"
-import type { UploadFile } from 'ant-design-vue';
+import type { Brand, BrandResponse } from "~/types/brand/brand";
+import type { Season, SeasonResponse } from "~/types/season/season";
+import type { Size, SizeResponse } from "~/types/sizes/size"
+import type { Color, ColorResponse } from "~/types/colors/color"
 
+import type { Variant } from "~/types/items/item";
 
 definePageMeta({
   layout: 'default',
@@ -206,10 +205,12 @@ const formState = ref<ItemFormState>({
   brand_id: '',
   season_id: '',
   variants: [{
+    id: '',
     color_id: '',
     size_id: '',
     quantity: 0,
-    price: 0,
+    price: '0', // Changed to string
+    image: '',
     imageFileList: []
   }]
 })
@@ -443,25 +444,27 @@ const beforeUploadImage = (file: File, variantIndex: number) => {
   }
 
   // Store the new file (this will replace any existing image)
-  formState.value.variants[variantIndex].image = file;
+  formState.value.variants[variantIndex].image = file as any; // Cast to match string type
   formState.value.variants[variantIndex].imageFileList = [{
     uid: file.name + Date.now(),
     name: file.name,
-    status: 'done',
+    status: 'done' as UploadFileStatus,
+    url: URL.createObjectURL(file) // Add required url property
   }];
   
   return false; // Prevent automatic upload
 }
 
-
 // Variant management
 const addVariant = () => {
   formState.value.variants.push({
+    id: '',
     color_id: '',
     size_id: '',
     quantity: 0,
-    price: 0,
-    imageFileList: [] as UploadFile[]  
+    price: '0', // Changed to string
+    image: '',
+    imageFileList: []
   });
 }
 
@@ -510,11 +513,13 @@ const resetForm = () => {
     brand_id: '',
     season_id: '',
     variants: [{
+      id: '',
       color_id: '',
       size_id: '',
       quantity: 0,
-      price: 0,
-      imageFileList: [] as UploadFile[]  
+      price: '0', // Changed to string
+      image: '',
+      imageFileList: []
     }]
   }
   editingItemId.value = null
@@ -523,6 +528,28 @@ const resetForm = () => {
   }
 }
 
+// Fixed mappedVariants function
+const mappedVariants = (item: Item): ItemVariant[] => {
+  return item.variants.map((variant: Variant) => ({
+    id: variant.id, // Preserve the variant ID
+    color_id: variant.color_id,
+    size_id: variant.size_id,
+    quantity: variant.quantity,
+    price: variant.price, // Keep as string (matches type definition)
+    image: variant.image, // Keep as string URL
+    imageFileList: variant.image
+      ? [
+          {
+            uid: variant.id || Math.random().toString(), // Fallback to random string if ID is missing
+            name: 'image.jpg',
+            status: 'done' as UploadFileStatus, // Explicitly typed as UploadFileStatus
+            url: variant.image,
+          },
+        ]
+      : [],
+  }));
+};
+
 // Edit item function
 const editItem = (record: Record<string, any>) => {
   const item = record as Item
@@ -530,29 +557,13 @@ const editItem = (record: Record<string, any>) => {
   modalVisible.value = true
   editingItemId.value = item.id
 
-  // Map variants properly, preserving IDs and existing data
-  const mappedVariants: ItemVariant[] = item.variants.map(variant => ({
-    id: variant.id, // Preserve the variant ID
-    color_id: variant.color_id,
-    size_id: variant.size_id,
-    quantity: variant.quantity,
-    price: variant.price,
-    image: variant.image, // Keep as string URL initially
-    imageFileList: variant.image ? [{
-      uid: variant.id || Math.random().toString(),
-      name: 'image.jpg',
-      status: 'done' as const, // Fix: Use 'done' as const to match UploadFileStatus
-      url: variant.image as string
-    }] : []
-  }))
-
   formState.value = {
     name: item.name,
     description: item.description || '',
     category_id: item.category_id,
     brand_id: item.brand_id,
     season_id: item.season_id,
-    variants: mappedVariants
+    variants: mappedVariants(item) // Now correctly calling the function
   }
 
   console.log('Editing item:', item)
@@ -582,7 +593,7 @@ const handleSubmit = async () => {
         message.error(`Please select size for variant ${i + 1}`)
         return
       }
-      if (!variant.price || variant.price <= 0) {
+      if (!variant.price || parseFloat(variant.price) <= 0) { // Fixed comparison by parsing string
         message.error(`Please enter valid price for variant ${i + 1}`)
         return
       }
@@ -628,10 +639,10 @@ const createItem = async () => {
       formData.append(`variants[${index}][color_id]`, variant.color_id)
       formData.append(`variants[${index}][size_id]`, variant.size_id)
       formData.append(`variants[${index}][quantity]`, String(variant.quantity))
-      formData.append(`variants[${index}][price]`, String(variant.price))
+      formData.append(`variants[${index}][price]`, variant.price) // Already a string
       
-      if (variant.image instanceof File) {
-        formData.append(`variants[${index}][image]`, variant.image)
+      if ((variant.image as any) instanceof File) { // Type assertion for File check
+        formData.append(`variants[${index}][image]`, variant.image as any)
       }
     })
 
@@ -678,11 +689,11 @@ const updateItem = async () => {
       formData.append(`variants[${index}][color_id]`, variant.color_id)
       formData.append(`variants[${index}][size_id]`, variant.size_id)
       formData.append(`variants[${index}][quantity]`, String(variant.quantity))
-      formData.append(`variants[${index}][price]`, String(variant.price))
+      formData.append(`variants[${index}][price]`, variant.price) // Already a string
       
       // Handle image upload - only send new images
-      if (variant.image instanceof File) {
-        formData.append(`variants[${index}][image]`, variant.image)
+      if ((variant.image as any) instanceof File) { // Type assertion for File check
+        formData.append(`variants[${index}][image]`, variant.image as any)
       }
       // If no new image but has existing image URL, you might want to preserve it
       else if (typeof variant.image === 'string' && variant.image) {
@@ -752,7 +763,6 @@ onMounted(async () => {
   ])
 })
 </script>
-
 <style scoped>
 .space-x-2>*+* {
   margin-left: 0.5rem;

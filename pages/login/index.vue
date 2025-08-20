@@ -160,7 +160,7 @@ const login = async (e: Event) => {
       // Optional: Redirect after success message
       setTimeout(() => {
         // Replace '/dashboard' with your desired redirect route
-        router.push('/dashboard');
+        router.push('/');
       }, 1500);
       
     } else {
