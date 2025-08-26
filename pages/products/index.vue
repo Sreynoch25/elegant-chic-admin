@@ -10,8 +10,54 @@
       </template>
     </a-page-header>
 
+    <!-- Filter Section -->
+    <a-card style="margin-bottom: 16px;">
+      <a-form layout="inline" :model="filterState" @submit.prevent>
+        <a-row :gutter="16" style="width: 100%;">
+          <a-col :span="6">
+            <a-form-item label="Search" class="!mb-3">
+              <a-input v-model:value="filterState.search" placeholder="Search by name or description" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="Category">
+              <a-select v-model:value="filterState.category_id" placeholder="Select category" :options="categoryOptions"
+                allowClear />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="Brand">
+              <a-select v-model:value="filterState.brand_id" placeholder="Select brand" :options="brandOptions"
+                allowClear />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="Season">
+              <a-select v-model:value="filterState.season_id" placeholder="Select season" :options="seasonOptions"
+                allowClear />
+            </a-form-item>
+          </a-col>
+          <a-col :span="6">
+            <a-form-item label="Discount">
+              <a-select v-model:value="filterState.discount_id" placeholder="Select discount" :options="discountOptions"
+                allowClear />
+            </a-form-item>
+          </a-col>
+          <a-col :span="24" style="margin-top: 16px; text-align: right;">
+            <a-button type="primary" @click="applyFilters" :loading="loading">
+              Apply Filters
+            </a-button>
+            <a-button style="margin-left: 8px;" @click="clearFilters">
+              Clear Filters
+            </a-button>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-card>
+
     <a-card>
       <a-table :columns="columns" :data-source="items" :loading="loading" row-key="id" :expand-row-by-click="true">
+        <!-- Existing table content remains unchanged -->
         <template #expandedRowRender="{ record }">
           <div style="margin: 16px 0;">
             <h4>Variants</h4>
@@ -91,14 +137,20 @@
         </a-form-item>
 
         <a-row :gutter="16">
-          <a-col :span="12">
+          <a-col :span="8">
             <a-form-item label="Brand" name="brand_id">
               <a-select v-model:value="formState.brand_id" placeholder="Select brand" :options="brandOptions" />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="8">
             <a-form-item label="Season" name="season_id">
               <a-select v-model:value="formState.season_id" placeholder="Select season" :options="seasonOptions" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="8">
+            <a-form-item label="Discount" name="discount_id">
+              <a-select v-model:value="formState.discount_id" placeholder="Select discount" :options="discountOptions"
+                allowClear />
             </a-form-item>
           </a-col>
         </a-row>
@@ -171,177 +223,209 @@
     </a-modal>
   </div>
 </template>
+
 <script setup lang="ts">
-import type { Item, ItemVariant, ItemFormState, ItemResponse, ApiResponse, UploadFileStatus} from "~/types/items/item";
+import type { Item, ItemVariant, ItemFormState, ItemResponse, ApiResponse, UploadFileStatus } from "~/types/items/item";
 import type { Category, CategoryResponse } from "~/types/category/category";
 import type { Brand, BrandResponse } from "~/types/brand/brand";
 import type { Season, SeasonResponse } from "~/types/season/season";
-import type { Size, SizeResponse } from "~/types/sizes/size"
-import type { Color, ColorResponse } from "~/types/colors/color"
-
+import type { Size, SizeResponse } from "~/types/sizes/size";
+import type { Color, ColorResponse } from "~/types/colors/color";
 import type { Variant } from "~/types/items/item";
+import { debounce } from 'lodash-es';
+import type { Discount, DiscountResponse } from "~/types/promotions/promotion";
 
 definePageMeta({
   layout: 'default',
-})
+});
 
 // Reactive variables
-const items = ref<Item[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const items = ref<Item[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
 
 // Modal state
-const modalVisible = ref(false)
-const modalMode = ref<'add' | 'edit'>('add')
-const confirmLoading = ref(false)
-const editingItemId = ref<string | null>(null)
+const modalVisible = ref(false);
+const modalMode = ref<'add' | 'edit'>('add');
+const confirmLoading = ref(false);
+const editingItemId = ref<string | null>(null);
+
+// Filter state
+const filterState = ref({
+  search: '',
+  category_id: '',
+  brand_id: '',
+  season_id: '',
+  discount_id: '',
+});
 
 // Form state and reference
-const formRef = ref<any>()
+const formRef = ref<any>();
 const formState = ref<ItemFormState>({
   name: '',
   description: '',
   category_id: '',
   brand_id: '',
   season_id: '',
+  discount_id: '', // Added discount_id to form state
   variants: [{
     id: '',
     color_id: '',
     size_id: '',
     quantity: 0,
-    price: '0', // Changed to string
+    price: '0',
     image: '',
     imageFileList: []
   }]
-})
+});
 
 // Reactive variables for dropdown data
-const categories = ref<Category[]>([])
-const brands = ref<Brand[]>([])
-const seasons = ref<Season[]>([])
-const sizes = ref<Size[]>([])
-const colors = ref<Color[]>([])
+const categories = ref<Category[]>([]);
+const brands = ref<Brand[]>([]);
+const seasons = ref<Season[]>([]);
+const sizes = ref<Size[]>([]);
+const colors = ref<Color[]>([]);
+const discounts = ref<Discount[]>([]);
 
-// Computed properties
-const categoryOptions = computed(() => 
+// Computed properties for dropdowns
+const categoryOptions = computed(() =>
   categories.value.map(category => ({
     label: category.name,
     value: category.id
   }))
-)
+);
 
-const brandOptions = computed(() => 
+const brandOptions = computed(() =>
   brands.value.map(brand => ({
     label: brand.name,
     value: brand.id
   }))
-)
+);
 
-const seasonOptions = computed(() => 
+const seasonOptions = computed(() =>
   seasons.value.map(season => ({
     label: season.name,
     value: season.id
   }))
-)
+);
 
-const colorOptions = computed(() => 
+const colorOptions = computed(() =>
   colors.value.map(color => ({
     label: color.name,
     value: color.id
   }))
-)
+);
 
-const sizeOptions = computed(() => 
+const sizeOptions = computed(() =>
   sizes.value.map(size => ({
     label: size.name,
     value: size.id
   }))
-)
+);
 
-// Fetch categories
+const discountOptions = computed(() => 
+  discounts.value.map(discount => ({
+    label: `${discount.name} (${discount.type === 'percent' ? `${discount.value}%` : `$${discount.value}`})`,
+    value: discount.id
+  }))
+);
+
+// Fetch functions
 const fetchCategories = async () => {
   try {
-    const { data } = await useFetchDataApi<CategoryResponse>('/categories')
+    const { data } = await useFetchDataApi<CategoryResponse>('/categories');
     if (data.value?.success && Array.isArray(data.value.data)) {
-      categories.value = data.value.data
+      categories.value = data.value.data;
     } else {
-      const errorMsg = data.value?.message || 'No categories returned'
-      console.error('Categories fetch error:', errorMsg)
-      message.error(errorMsg)
+      const errorMsg = data.value?.message || 'No categories returned';
+      console.error('Categories fetch error:', errorMsg);
+      message.error(errorMsg);
     }
   } catch (err: any) {
-    console.error('❌ Categories Fetch Error:', err)
-    message.error('Failed to fetch categories')
+    console.error('❌ Categories Fetch Error:', err);
+    message.error('Failed to fetch categories');
   }
-}
+};
 
-// Fetch brands
 const fetchBrands = async () => {
   try {
-    const { data } = await useFetchDataApi<BrandResponse>('/brands')
+    const { data } = await useFetchDataApi<BrandResponse>('/brands');
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
-      brands.value = data.value.data
+      brands.value = data.value.data;
     } else {
-      const errorMsg = data.value?.message || 'No brands returned'
-      console.error('Brands fetch error:', errorMsg)
-      message.error(errorMsg)
+      const errorMsg = data.value?.message || 'No brands returned';
+      console.error('Brands fetch error:', errorMsg);
+      message.error(errorMsg);
     }
   } catch (err: any) {
-    console.error('❌ Brands Fetch Error:', err)
-    message.error('Failed to fetch brands')
+    console.error('❌ Brands Fetch Error:', err);
+    message.error('Failed to fetch brands');
   }
-}
+};
 
-// Fetch seasons
 const fetchSeasons = async () => {
   try {
-    const { data } = await useFetchDataApi<SeasonResponse>('/seasons')
+    const { data } = await useFetchDataApi<SeasonResponse>('/seasons');
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
-      seasons.value = data.value.data
+      seasons.value = data.value.data;
     } else {
-      const errorMsg = data.value?.message || 'No seasons returned'
-      console.error('Seasons fetch error:', errorMsg)
-      message.error(errorMsg)
+      const errorMsg = data.value?.message || 'No seasons returned';
+      console.error('Seasons fetch error:', errorMsg);
+      message.error(errorMsg);
     }
   } catch (err: any) {
-    console.error('❌ Seasons Fetch Error:', err)
-    message.error('Failed to fetch seasons')
+    console.error('❌ Seasons Fetch Error:', err);
+    message.error('Failed to fetch seasons');
   }
-}
+};
 
-// Fetch colors
 const fetchColors = async () => {
   try {
-    const { data } = await useFetchDataApi<ColorResponse>('/color')
+    const { data } = await useFetchDataApi<ColorResponse>('/color');
     if (data.value?.status === 'success' && Array.isArray(data.value.data)) {
-      colors.value = data.value.data
+      colors.value = data.value.data;
     } else {
-      const errorMsg = data.value?.message || 'No colors returned'
-      console.error('Colors fetch error:', errorMsg)
-      message.error(errorMsg)
+      const errorMsg = data.value?.message || 'No colors returned';
+      console.error('Colors fetch error:', errorMsg);
+      message.error(errorMsg);
     }
   } catch (err: any) {
-    console.error('❌ Colors Fetch Error:', err)
-    message.error('Failed to fetch colors')
+    console.error('❌ Colors Fetch Error:', err);
+    message.error('Failed to fetch colors');
   }
-}
+};
 
-// Fetch sizes
 const fetchSizes = async () => {
   try {
-    const { data } = await useFetchDataApi<SizeResponse>('/size')
+    const { data } = await useFetchDataApi<SizeResponse>('/size');
     if (data.value?.status === 200 && Array.isArray(data.value.data)) {
-      sizes.value = data.value.data
+      sizes.value = data.value.data;
     } else {
-      const errorMsg = data.value?.message || 'No sizes returned'
-      console.error('Sizes fetch error:', errorMsg)
-      message.error(errorMsg)
+      const errorMsg = data.value?.message || 'No sizes returned';
+      console.error('Sizes fetch error:', errorMsg);
+      message.error(errorMsg);
     }
   } catch (err: any) {
-    console.error('❌ Sizes Fetch Error:', err)
-    message.error('Failed to fetch sizes')
+    console.error('❌ Sizes Fetch Error:', err);
+    message.error('Failed to fetch sizes');
   }
-}
+};
+
+const fetchDiscounts = async () => {
+  try {
+    const { data } = await useFetchDataApi<DiscountResponse>('/discounts');
+    if (data.value?.status === 200 && Array.isArray(data.value.data)) {
+      discounts.value = data.value.data;
+    } else {
+      const errorMsg = data.value?.message || 'No discounts returned';
+      console.error('Discounts fetch error:', errorMsg);
+      message.error(errorMsg);
+    }
+  } catch (err: any) {
+    console.error('❌ Discounts Fetch Error:', err);
+    message.error('Failed to fetch discounts');
+  }
+};
 
 // Form validation rules
 const formRules = {
@@ -361,7 +445,7 @@ const formRules = {
   season_id: [
     { required: true, message: 'Please select a season' }
   ]
-}
+};
 
 // Table columns
 const columns = [
@@ -390,14 +474,17 @@ const columns = [
   {
     title: 'Created At',
     key: 'created_at',
+    dataIndex: 'created_at',
     width: 150,
+    sorter: (a: Item, b: Item) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    defaultSortOrder: 'descend' as const,
   },
   {
     title: 'Action',
     key: 'action',
     width: 150,
   },
-]
+];
 
 // Variant table columns
 const variantColumns = [
@@ -427,7 +514,7 @@ const variantColumns = [
     key: 'quantity',
     width: 100,
   },
-]
+];
 
 // File upload handling
 const beforeUploadImage = (file: File, variantIndex: number) => {
@@ -443,17 +530,16 @@ const beforeUploadImage = (file: File, variantIndex: number) => {
     return false;
   }
 
-  // Store the new file (this will replace any existing image)
-  formState.value.variants[variantIndex].image = file as any; // Cast to match string type
+  formState.value.variants[variantIndex].image = file as any;
   formState.value.variants[variantIndex].imageFileList = [{
     uid: file.name + Date.now(),
     name: file.name,
     status: 'done' as UploadFileStatus,
-    url: URL.createObjectURL(file) // Add required url property
+    url: URL.createObjectURL(file)
   }];
-  
-  return false; // Prevent automatic upload
-}
+
+  return false;
+};
 
 // Variant management
 const addVariant = () => {
@@ -462,48 +548,27 @@ const addVariant = () => {
     color_id: '',
     size_id: '',
     quantity: 0,
-    price: '0', // Changed to string
+    price: '0',
     image: '',
     imageFileList: []
   });
-}
+};
 
 const removeVariant = (index: number) => {
   formState.value.variants.splice(index, 1);
-}
-
-// Fetch items
-const fetchItems = async () => {
-  loading.value = true
-  error.value = null
-  try {
-    const { data } = await useFetchDataApi<ItemResponse>('/item')
-    if (data.value?.data && Array.isArray(data.value.data)) {
-      items.value = data.value.data
-    } else {
-      error.value = data.value?.message || 'No items returned'
-      message.error(error.value)
-    }
-  } catch (err: any) {
-    console.error('❌ Items Fetch Error:', err)
-    error.value = 'Failed to fetch items'
-    message.error(error.value)
-  } finally {
-    loading.value = false
-  }
-}
+};
 
 // Modal functions
 const showModal = () => {
-  modalMode.value = 'add'
-  modalVisible.value = true
-  resetForm()
-}
+  modalMode.value = 'add';
+  modalVisible.value = true;
+  resetForm();
+};
 
 const handleCancel = () => {
-  modalVisible.value = false
-  resetForm()
-}
+  modalVisible.value = false;
+  resetForm();
+};
 
 const resetForm = () => {
   formState.value = {
@@ -512,50 +577,49 @@ const resetForm = () => {
     category_id: '',
     brand_id: '',
     season_id: '',
+    discount_id: '',
     variants: [{
       id: '',
       color_id: '',
       size_id: '',
       quantity: 0,
-      price: '0', // Changed to string
+      price: '0',
       image: '',
       imageFileList: []
     }]
-  }
-  editingItemId.value = null
+  };
+  editingItemId.value = null;
   if (formRef.value) {
-    formRef.value.resetFields()
+    formRef.value.resetFields();
   }
-}
+};
 
-// Fixed mappedVariants function
 const mappedVariants = (item: Item): ItemVariant[] => {
   return item.variants.map((variant: Variant) => ({
-    id: variant.id, // Preserve the variant ID
+    id: variant.id,
     color_id: variant.color_id,
     size_id: variant.size_id,
     quantity: variant.quantity,
-    price: variant.price, // Keep as string (matches type definition)
-    image: variant.image, // Keep as string URL
+    price: variant.price,
+    image: variant.image,
     imageFileList: variant.image
       ? [
-          {
-            uid: variant.id || Math.random().toString(), // Fallback to random string if ID is missing
-            name: 'image.jpg',
-            status: 'done' as UploadFileStatus, // Explicitly typed as UploadFileStatus
-            url: variant.image,
-          },
-        ]
+        {
+          uid: variant.id || Math.random().toString(),
+          name: 'image.jpg',
+          status: 'done' as UploadFileStatus,
+          url: variant.image,
+        },
+      ]
       : [],
   }));
 };
 
-// Edit item function
 const editItem = (record: Record<string, any>) => {
-  const item = record as Item
-  modalMode.value = 'edit'
-  modalVisible.value = true
-  editingItemId.value = item.id
+  const item = record as Item;
+  modalMode.value = 'edit';
+  modalVisible.value = true;
+  editingItemId.value = item.id;
 
   formState.value = {
     name: item.name,
@@ -563,182 +627,178 @@ const editItem = (record: Record<string, any>) => {
     category_id: item.category_id,
     brand_id: item.brand_id,
     season_id: item.season_id,
-    variants: mappedVariants(item) // Now correctly calling the function
-  }
+    discount_id: item.discount_id || '', // Added discount_id
+    variants: mappedVariants(item)
+  };
+};
 
-  console.log('Editing item:', item)
-  console.log('Form state variants:', formState.value.variants)
-}
-
-// Handle form submission
 const handleSubmit = async () => {
   try {
-    // Validate basic form fields
-    await formRef.value.validate()
-    
-    // Validate variants
+    await formRef.value.validate();
+
     if (!formState.value.variants || formState.value.variants.length === 0) {
-      message.error('Please add at least one variant')
-      return
+      message.error('Please add at least one variant');
+      return;
     }
 
-    // Validate each variant
     for (let i = 0; i < formState.value.variants.length; i++) {
-      const variant = formState.value.variants[i]
+      const variant = formState.value.variants[i];
       if (!variant.color_id) {
-        message.error(`Please select color for variant ${i + 1}`)
-        return
+        message.error(`Please select color for variant ${i + 1}`);
+        return;
       }
       if (!variant.size_id) {
-        message.error(`Please select size for variant ${i + 1}`)
-        return
+        message.error(`Please select size for variant ${i + 1}`);
+        return;
       }
-      if (!variant.price || parseFloat(variant.price) <= 0) { // Fixed comparison by parsing string
-        message.error(`Please enter valid price for variant ${i + 1}`)
-        return
+      if (!variant.price || parseFloat(variant.price) <= 0) {
+        message.error(`Please enter valid price for variant ${i + 1}`);
+        return;
       }
       if (variant.quantity < 0) {
-        message.error(`Please enter valid quantity for variant ${i + 1}`)
-        return
+        message.error(`Please enter valid quantity for variant ${i + 1}`);
+        return;
       }
     }
 
-    confirmLoading.value = true
+    confirmLoading.value = true;
 
     if (modalMode.value === 'add') {
-      await createItem()
+      await createItem();
     } else {
-      await updateItem()
+      await updateItem();
     }
 
-    modalVisible.value = false
-    resetForm()
-    await fetchItems()
+    modalVisible.value = false;
+    resetForm();
+    
+    console.log('🔄 Refreshing items list after', modalMode.value);
+    await fetchItems();
+    console.log('📋 Items list refreshed, total items:', items.value.length);
 
   } catch (error) {
-    console.error('Form validation failed:', error)
+    console.error('Form validation or submission failed:', error);
   } finally {
-    confirmLoading.value = false
+    confirmLoading.value = false;
   }
-}
+};
 
-// Create item function
 const createItem = async () => {
   try {
-    const formData = new FormData()
+    const formData = new FormData();
+
+    formData.append('name', formState.value.name);
+    formData.append('description', formState.value.description);
+    formData.append('category_id', formState.value.category_id);
+    formData.append('brand_id', formState.value.brand_id);
+    formData.append('season_id', formState.value.season_id);
     
-    // Add basic item data
-    formData.append('name', formState.value.name)
-    formData.append('description', formState.value.description)
-    formData.append('category_id', formState.value.category_id)
-    formData.append('brand_id', formState.value.brand_id)
-    formData.append('season_id', formState.value.season_id)
+    if (formState.value.discount_id) {
+      formData.append('discount_id', formState.value.discount_id);
+    }
 
-    // Add variants data
     formState.value.variants.forEach((variant, index) => {
-      formData.append(`variants[${index}][color_id]`, variant.color_id)
-      formData.append(`variants[${index}][size_id]`, variant.size_id)
-      formData.append(`variants[${index}][quantity]`, String(variant.quantity))
-      formData.append(`variants[${index}][price]`, variant.price) // Already a string
-      
-      if ((variant.image as any) instanceof File) { // Type assertion for File check
-        formData.append(`variants[${index}][image]`, variant.image as any)
-      }
-    })
+      formData.append(`variants[${index}][color_id]`, variant.color_id);
+      formData.append(`variants[${index}][size_id]`, variant.size_id);
+      formData.append(`variants[${index}][quantity]`, String(variant.quantity));
+      formData.append(`variants[${index}][price]`, variant.price);
 
-    console.log('Creating item with data:', {
+      if ((variant.image as any) instanceof File) {
+        formData.append(`variants[${index}][image]`, variant.image as any);
+      }
+    });
+
+    console.log('🚀 Creating item with data:', {
       name: formState.value.name,
-      variants: formState.value.variants
-    })
+      variants_count: formState.value.variants.length
+    });
 
     const { data } = await useFetchDataApi<ApiResponse>('/item', {
       method: 'POST',
       body: formData,
-    })
+    });
 
-    if (data.value?.message) {
-      message.success(data.value.message)
+    console.log('📥 Create response:', data.value);
+
+    if (data.value?.success || data.value?.message) {
+      message.success(data.value.message || 'Item created successfully');
+      console.log('✅ Item created, refreshing list...');
     } else {
-      message.success('Item created successfully')
+      console.warn('⚠️ Unexpected response format:', data.value);
+      message.success('Item created successfully');
     }
   } catch (error: any) {
-    console.error('❌ Create Error:', error)
-    message.error(error.message || 'Failed to create item')
-    throw error
+    console.error('❌ Create Error:', error);
+    message.error(error.message || 'Failed to create item');
+    throw error;
   }
-}
+};
 
-// Update item function
 const updateItem = async () => {
   try {
-    const formData = new FormData()
-    formData.append('_method', 'PUT')
-    formData.append('name', formState.value.name)
-    formData.append('description', formState.value.description)
-    formData.append('category_id', formState.value.category_id)
-    formData.append('brand_id', formState.value.brand_id)
-    formData.append('season_id', formState.value.season_id)
+    const formData = new FormData();
+    formData.append('_method', 'PUT');
+    formData.append('name', formState.value.name);
+    formData.append('description', formState.value.description);
+    formData.append('category_id', formState.value.category_id);
+    formData.append('brand_id', formState.value.brand_id);
+    formData.append('season_id', formState.value.season_id);
+    
+    if (formState.value.discount_id) {
+      formData.append('discount_id', formState.value.discount_id);
+    }
 
-    // Handle variants with proper structure
     formState.value.variants.forEach((variant, index) => {
-      // Include variant ID if it exists (for existing variants)
       if (variant.id) {
-        formData.append(`variants[${index}][id]`, variant.id)
+        formData.append(`variants[${index}][id]`, variant.id);
       }
-      
-      formData.append(`variants[${index}][color_id]`, variant.color_id)
-      formData.append(`variants[${index}][size_id]`, variant.size_id)
-      formData.append(`variants[${index}][quantity]`, String(variant.quantity))
-      formData.append(`variants[${index}][price]`, variant.price) // Already a string
-      
-      // Handle image upload - only send new images
-      if ((variant.image as any) instanceof File) { // Type assertion for File check
-        formData.append(`variants[${index}][image]`, variant.image as any)
-      }
-      // If no new image but has existing image URL, you might want to preserve it
-      else if (typeof variant.image === 'string' && variant.image) {
-        formData.append(`variants[${index}][existing_image]`, variant.image)
-      }
-    })
 
-    console.log('Updating item with ID:', editingItemId.value)
-    console.log('Form data variants:', formState.value.variants)
+      formData.append(`variants[${index}][color_id]`, variant.color_id);
+      formData.append(`variants[${index}][size_id]`, variant.size_id);
+      formData.append(`variants[${index}][quantity]`, String(variant.quantity));
+      formData.append(`variants[${index}][price]`, variant.price);
+
+      if ((variant.image as any) instanceof File) {
+        formData.append(`variants[${index}][image]`, variant.image as any);
+      } else if (typeof variant.image === 'string' && variant.image) {
+        formData.append(`variants[${index}][existing_image]`, variant.image);
+      }
+    });
 
     const { data } = await useFetchDataApi<ApiResponse>(`/item/${editingItemId.value}`, {
-      method: 'POST', // Keep as POST since you're using _method override
+      method: 'POST',
       body: formData,
-    })
+    });
 
     if (data.value?.success) {
-      message.success(data.value.message || 'Item updated successfully')
+      message.success(data.value.message || 'Item updated successfully');
     } else {
-      throw new Error(data.value?.message || 'Failed to update item')
+      throw new Error(data.value?.message || 'Failed to update item');
     }
   } catch (error: any) {
-    console.error('❌ Update Error:', error)
-    message.error(error.message || 'Failed to update item')
-    throw error
+    console.error('❌ Update Error:', error);
+    message.error(error.message || 'Failed to update item');
+    throw error;
   }
-}
+};
 
-// Delete item function
 const deleteItem = async (itemId: string) => {
   try {
     const { data } = await useFetchDataApi<ApiResponse>(`/item/${itemId}`, {
       method: 'DELETE'
-    })
+    });
 
     if (data.value?.message) {
-      message.success(data.value.message)
+      message.success(data.value.message);
     } else {
-      message.success('Item deleted successfully')
+      message.success('Item deleted successfully');
     }
-    await fetchItems()
+    await fetchItems();
   } catch (error: any) {
-    console.error('❌ Delete Error:', error)
-    message.error(error.message || 'Failed to delete item')
+    console.error('❌ Delete Error:', error);
+    message.error(error.message || 'Failed to delete item');
   }
-}
+};
 
 // Format date helper
 const formatDate = (dateString: string) => {
@@ -748,8 +808,93 @@ const formatDate = (dateString: string) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })
-}
+  });
+};
+
+// Fetch items with filter parameters
+const fetchItems = async () => {
+  loading.value = true;
+  error.value = null;
+  
+  console.log('🔍 Fetching items with filters:', filterState.value);
+  
+  try {
+    const params: Record<string, string> = {};
+    if (filterState.value.search) params.search = filterState.value.search;
+    if (filterState.value.category_id) params.category_id = filterState.value.category_id;
+    if (filterState.value.brand_id) params.brand_id = filterState.value.brand_id;
+    if (filterState.value.season_id) params.season_id = filterState.value.season_id;
+    if (filterState.value.discount_id) params.discount_id = filterState.value.discount_id;
+
+    const { data } = await useFetchDataApi<ItemResponse>('/item', {
+      query: params
+    });
+
+    console.log('📥 Fetch response:', {
+      success: data.value?.success,
+      dataLength: data.value?.data?.length,
+      message: data.value?.message
+    });
+
+    if (data.value?.data && Array.isArray(data.value.data)) {
+      items.value = data.value.data;
+      console.log(`✅ Successfully loaded ${items.value.length} items`);
+      
+      // Log the first few items for debugging
+      if (items.value.length > 0) {
+        console.log('📝 Latest items:', items.value.slice(0, 3).map(item => ({
+          id: item.id,
+          name: item.name,
+          created_at: item.created_at
+        })));
+      }
+    } else {
+      error.value = data.value?.message || 'No items returned';
+      console.warn('⚠️ No items in response:', data.value);
+      message.error(error.value);
+    }
+  } catch (err: any) {
+    console.error('❌ Items Fetch Error:', err);
+    error.value = 'Failed to fetch items';
+    message.error(error.value);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Apply filters
+const applyFilters = () => {
+  fetchItems();
+};
+
+// Clear filters
+const clearFilters = () => {
+  filterState.value = {
+    search: '',
+    category_id: '',
+    brand_id: '',
+    season_id: '',
+    discount_id: '',
+  };
+  fetchItems();
+};
+
+// Debounced fetchItems for search input
+const debouncedFetchItems = debounce(fetchItems, 500);
+
+// Watch filterState changes
+watch(() => filterState.value.search, () => {
+  debouncedFetchItems();
+});
+
+watch([
+  () => filterState.value.category_id, 
+  () => filterState.value.brand_id, 
+  () => filterState.value.season_id, 
+  () => filterState.value.discount_id
+], () => {
+  fetchItems();
+});
 
 // Initialize
 onMounted(async () => {
@@ -759,10 +904,32 @@ onMounted(async () => {
     fetchBrands(),
     fetchSeasons(),
     fetchColors(),
-    fetchSizes()
-  ])
-})
+    fetchSizes(),
+    fetchDiscounts()
+  ]);
+});
 </script>
+
+<style scoped lang="css">
+.space-x-2>*+* {
+  margin-left: 0.5rem;
+}
+
+.variant-form {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #fafafa;
+}
+
+.modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+</style>
+
+
 <style scoped>
 .space-x-2>*+* {
   margin-left: 0.5rem;

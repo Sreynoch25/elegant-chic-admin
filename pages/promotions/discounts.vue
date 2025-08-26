@@ -3,11 +3,6 @@
     <a-page-header title="Discounts" subtitle="Manage product discounts">
       <template #extra>
         <div style="display: flex;">
-          <a-button>
-            <NuxtLink to="/products">
-              <left-outlined /> Back to Products
-            </NuxtLink>
-          </a-button>
           <a-button type="primary" @click="showModal" style="margin-left: 0.5rem;">
             <plus-outlined /> Add Discount
           </a-button>
@@ -185,44 +180,8 @@
 
 <script setup lang="ts">
 import dayjs, { type Dayjs } from 'dayjs'
+import type { Discount, DiscountFormState, ApiResponse, DiscountResponse } from "~/types/promotions/promotion";
 
-// Types
-interface Discount {
-  id: string
-  name: string
-  description: string
-  type: 'percent' | 'fixed'
-  value: string
-  is_active: boolean
-  starts_at: string
-  expires_at: string
-  created_at: string
-  updated_at: string
-  items?: any[]
-}
-
-interface DiscountResponse {
-  status: number
-  message: string
-  data: Discount[]
-}
-
-interface DiscountFormState {
-  name: string
-  description: string
-  type: 'percent' | 'fixed'
-  value: number | undefined
-  starts_at: Dayjs | undefined
-  expires_at: Dayjs | undefined
-  is_active: boolean
-}
-
-interface ApiResponse {
-  status?: number
-  message: string
-  data?: any
-  discount?: Discount
-}
 
 definePageMeta({
   layout: 'default',
@@ -351,7 +310,6 @@ const showModal = () => {
   modalVisible.value = true
   resetForm()
 }
-
 const handleCancel = () => {
   modalVisible.value = false
   resetForm()

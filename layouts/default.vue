@@ -12,139 +12,180 @@
       </div>
 
       <!-- Navigation Menu -->
-      <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
-        <!-- Dashboard -->
-        <a-menu-item key="dashboard">
-          <template #icon><dashboard-outlined /></template>
-          <NuxtLink to="/">
-            <span>Dashboard</span>
-          </NuxtLink>
+<!-- Navigation Menu with Better Grouping -->
+<a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
+  <!-- Dashboard -->
+  <a-menu-item key="dashboard">
+    <template #icon><dashboard-outlined /></template>
+    <NuxtLink to="/">
+      <span>Dashboard</span>
+    </NuxtLink>
+  </a-menu-item>
+
+  <!-- User Management -->
+  <a-sub-menu key="user-management">
+    <template #icon><team-outlined /></template>
+    <template #title>User Management</template>
+    <a-menu-item key="users-all">
+      <template #icon><user-outlined /></template>
+      <NuxtLink to="/users">All Users</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="users-customer">
+      <template #icon><user-outlined /></template>
+      <NuxtLink to="/users/customer">Customers</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="roles">
+      <template #icon><safety-certificate-outlined /></template>
+      <NuxtLink to="/roles">Roles & Permissions</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="permissions">
+      <template #icon><key-outlined /></template>
+      <NuxtLink to="/roles/permission">Permissions</NuxtLink>
+    </a-menu-item>
+  </a-sub-menu>
+
+  <!-- Catalog Management -->
+  <a-sub-menu key="catalog">
+    <template #icon><appstore-outlined /></template>
+    <template #title>Catalog Management</template>
+    
+    <!-- Products -->
+    <a-sub-menu key="products">
+      <template #icon><shopping-outlined /></template>
+      <template #title>Products</template>
+      <a-menu-item key="products-list">
+        <NuxtLink to="/products">All Products</NuxtLink>
+      </a-menu-item>
+      <a-menu-item key="products-inventory">
+        <NuxtLink to="/products/inventory">Inventory</NuxtLink>
+      </a-menu-item>
+    </a-sub-menu>
+
+    <!-- Categories -->
+    <a-sub-menu key="categories">
+      <template #icon><folder-outlined /></template>
+      <template #title>Categories</template>
+      <a-menu-item key="categories-list">
+        <NuxtLink to="/categories">Categories</NuxtLink>
+      </a-menu-item>
+      <a-menu-item key="categories-group">
+        <NuxtLink to="/categories/group">Category Groups</NuxtLink>
+      </a-menu-item>
+    </a-sub-menu>
+
+    <!-- Product Attributes -->
+    <a-sub-menu key="attributes">
+      <template #icon><tags-outlined /></template>
+      <template #title>Attributes</template>
+      <a-menu-item key="brands">
+        <template #icon><crown-outlined /></template>
+        <NuxtLink to="/brands">Brands</NuxtLink>
+      </a-menu-item>
+      <a-menu-item key="colors">
+        <template #icon><bg-colors-outlined /></template>
+        <NuxtLink to="/colors">Colors</NuxtLink>
+      </a-menu-item>
+      <a-menu-item key="seasons">
+        <template #icon><calendar-outlined /></template>
+        <NuxtLink to="/seasons">Seasons</NuxtLink>
+      </a-menu-item>
+      <a-sub-menu key="sizes">
+        <template #icon><pic-right-outlined /></template>
+        <template #title>Sizes</template>
+        <a-menu-item key="size-group">
+          <NuxtLink to="/sizes/group">Size Groups</NuxtLink>
         </a-menu-item>
-
-        <!-- Users Management -->
-        <a-sub-menu key="users">
-          <template #icon><user-outlined /></template>
-          <template #title>Users</template>
-          <a-menu-item key="users-list">
-            <NuxtLink to="/users">All Users</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="users-customer">
-            <NuxtLink to="/users/customer">All Customers</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Roles & Permissions -->
-        <a-sub-menu key="roles">
-          <template #icon><team-outlined /></template>
-          <template #title>Roles</template>
-          <a-menu-item key="role-list">
-            <NuxtLink to="/roles">View All Roles</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="permission-list">
-            <NuxtLink to="/roles/permission">View All Permissions</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Delivery Management -->
-        <a-menu-item key="deliveries">
-          <template #icon><truck-outlined /></template>
-          <NuxtLink to="/deliveries">
-            <span>Deliveries</span>
-          </NuxtLink>
+        <a-menu-item key="sizes-list">
+          <NuxtLink to="/sizes">All Sizes</NuxtLink>
         </a-menu-item>
+      </a-sub-menu>
+    </a-sub-menu>
+  </a-sub-menu>
 
-        <!-- Categories Management -->
-        <a-sub-menu key="categories">
-          <template #icon><appstore-outlined /></template>
-          <template #title>Categories</template>
-          <a-menu-item key="categories-list">
-            <NuxtLink to="/categories">Categories</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="categories-group">
-            <NuxtLink to="/categories/group">Categories Group</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
+  <!-- Sales & Orders -->
+  <a-sub-menu key="sales">
+    <template #icon><shopping-cart-outlined /></template>
+    <template #title>Sales & Orders</template>
+    <a-menu-item key="orders-all">
+      <template #icon><file-text-outlined /></template>
+      <NuxtLink to="/orders">All Orders</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="orders-pending">
+      <template #icon><clock-circle-outlined /></template>
+      <NuxtLink to="/orders/pending">Pending Orders</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="orders-completed">
+      <template #icon><check-circle-outlined /></template>
+      <NuxtLink to="/orders/completed">Completed Orders</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="deliveries">
+      <template #icon><truck-outlined /></template>
+      <NuxtLink to="/deliveries">Deliveries</NuxtLink>
+    </a-menu-item>
+  </a-sub-menu>
 
-        <!-- Sizes Management -->
-        <a-sub-menu key="sizes">
-          <template #icon><pic-right-outlined /></template>
-          <template #title>Sizes</template>
-          <a-menu-item key="size-group">
-            <NuxtLink to="/sizes/group">Size Group</NuxtLink>
-          </a-menu-item>
-          <a-menu-item key="sizes-list">
-            <NuxtLink to="/sizes">Sizes</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
+  <!-- Marketing -->
+  <a-sub-menu key="marketing">
+    <template #icon><gift-outlined /></template>
+    <template #title>Marketing</template>
+    <a-menu-item key="promotions">
+      <template #icon><percentage-outlined /></template>
+      <NuxtLink to="/promotions/discounts">Promotions & Discounts</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="banners">
+      <template #icon><picture-outlined /></template>
+      <NuxtLink to="/banners">Banners</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="campaigns">
+      <template #icon><mail-outlined /></template>
+      <NuxtLink to="/campaigns">Email Campaigns</NuxtLink>
+    </a-menu-item>
+  </a-sub-menu>
 
-        <!-- Brands Management -->
-        <a-menu-item key="brands">
-          <template #icon><crown-outlined /></template>
-          <NuxtLink to="/brands">
-            <span>Brands</span>
-          </NuxtLink>
-        </a-menu-item>
+  <!-- Reports & Analytics -->
+  <a-sub-menu key="analytics">
+    <template #icon><bar-chart-outlined /></template>
+    <template #title>Reports & Analytics</template>
+    <a-menu-item key="reports-sales">
+      <template #icon><line-chart-outlined /></template>
+      <NuxtLink to="/reports/sales">Sales Reports</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="reports-inventory">
+      <template #icon><database-outlined /></template>
+      <NuxtLink to="/reports/inventory">Inventory Reports</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="reports-customers">
+      <template #icon><user-outlined /></template>
+      <NuxtLink to="/reports/customers">Customer Analytics</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="reports-financial">
+      <template #icon><dollar-circle-outlined /></template>
+      <NuxtLink to="/reports/financial">Financial Reports</NuxtLink>
+    </a-menu-item>
+  </a-sub-menu>
 
-        <!-- Promotions -->
-        <a-sub-menu key="promotions">
-          <template #icon><gift-outlined /></template>
-          <template #title>Promotions</template>
-          <a-menu-item key="discounts">
-            <NuxtLink to="/promotions/discounts">Discounts</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Banners -->
-        <a-menu-item key="banners">
-          <template #icon><picture-outlined /></template>
-          <NuxtLink to="/banners">
-            <span>Banners</span>
-          </NuxtLink>
-        </a-menu-item>
-
-        <!-- Seasons -->
-        <a-menu-item key="seasons">
-          <template #icon><calendar-outlined /></template>
-          <NuxtLink to="/seasons">
-            <span>Seasons</span>
-          </NuxtLink>
-        </a-menu-item>
-
-        <!-- Colors -->
-        <a-menu-item key="colors">
-          <template #icon><bg-colors-outlined /></template>
-          <NuxtLink to="/colors">
-            <span>Colors</span>
-          </NuxtLink>
-        </a-menu-item>
-
-        <!-- Products Management -->
-        <a-sub-menu key="products">
-          <template #icon><shopping-outlined /></template>
-          <template #title>Products</template>
-          <a-menu-item key="products-list">
-            <NuxtLink to="/products">All Products</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Orders Management -->
-        <a-sub-menu key="orders">
-          <template #icon><shopping-cart-outlined /></template>
-          <template #title>Orders</template>
-          <a-menu-item key="orders-list">
-            <NuxtLink to="/orders">All Orders</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-
-        <!-- Reports -->
-        <a-sub-menu key="reports">
-          <template #icon><bar-chart-outlined /></template>
-          <template #title>Reports</template>
-          <a-menu-item key="reports-inventory">
-            <NuxtLink to="/reports/inventory">Inventory Report</NuxtLink>
-          </a-menu-item>
-        </a-sub-menu>
-      </a-menu>
+  <!-- System Settings -->
+  <a-sub-menu key="settings">
+    <template #icon><setting-outlined /></template>
+    <template #title>Settings</template>
+    <a-menu-item key="settings-general">
+      <template #icon><control-outlined /></template>
+      <NuxtLink to="/settings">General Settings</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="settings-payment">
+      <template #icon><credit-card-outlined /></template>
+      <NuxtLink to="/settings/payment">Payment Settings</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="settings-shipping">
+      <template #icon><car-outlined /></template>
+      <NuxtLink to="/settings/shipping">Shipping Settings</NuxtLink>
+    </a-menu-item>
+    <a-menu-item key="settings-notifications">
+      <template #icon><notification-outlined /></template>
+      <NuxtLink to="/settings/notifications">Notifications</NuxtLink>
+    </a-menu-item>
+  </a-sub-menu>
+</a-menu>
     </a-layout-sider>
 
     <!-- Mobile overlay backdrop when sidebar is open -->
@@ -328,24 +369,54 @@ const selectedKeys = computed(() => {
   const path = route.path
 
   // Route to menu key mapping
-  const routeMapping: Record<string, string> = {
-    '/': 'dashboard',
-    '/users': 'users-list',
-    '/users/customer': 'users-customer',
-    '/roles': 'role-list',
-    '/roles/permission': 'permission-list',
-    '/categories': 'categories-list',
-    '/categories/group': 'categories-group',
-    '/sizes': 'sizes-list',
-    '/sizes/group': 'size-group',
-    '/promotions/discounts': 'discounts',
-    '/products': 'products-list',
-    '/orders': 'orders-list',
-    '/reports/inventory': 'reports-inventory',
-    '/settings/profile': 'profile',
-    '/settings': 'settings'
-  }
-
+// Updated route mapping for the improved menu structure
+const routeMapping: Record<string, string> = {
+  '/': 'dashboard',
+  
+  // User Management
+  '/users': 'users-all',
+  '/users/customer': 'users-customer', 
+  '/roles': 'roles',
+  '/roles/permission': 'permissions',
+  
+  // Catalog Management - Products
+  '/products': 'products-list',
+  '/products/inventory': 'products-inventory',
+  
+  // Catalog Management - Categories
+  '/categories': 'categories-list',
+  '/categories/group': 'categories-group',
+  
+  // Catalog Management - Attributes
+  '/brands': 'brands',
+  '/colors': 'colors', 
+  '/seasons': 'seasons',
+  '/sizes': 'sizes-list',
+  '/sizes/group': 'size-group',
+  
+  // Sales & Orders
+  '/orders': 'orders-all',
+  '/orders/pending': 'orders-pending',
+  '/orders/completed': 'orders-completed', 
+  '/deliveries': 'deliveries',
+  
+  // Marketing
+  '/promotions/discounts': 'promotions',
+  '/banners': 'banners',
+  '/campaigns': 'campaigns',
+  
+  // Reports & Analytics
+  '/reports/sales': 'reports-sales',
+  '/reports/inventory': 'reports-inventory',
+  '/reports/customers': 'reports-customers',
+  '/reports/financial': 'reports-financial',
+  
+  // Settings
+  // '/settings': 'settings-general',
+  // '/settings/payment': 'settings-payment', 
+  // '/settings/shipping': 'settings-shipping',
+  // '/settings/notifications': 'settings-notifications'
+}
   // Check for exact matches first
   if (routeMapping[path]) {
     return [routeMapping[path]]
@@ -411,7 +482,7 @@ const toggleSider = () => {
 
 // Logout functionality using Pinia store
 const handleLogout = async () => {
-  if (loginStore.isSpinning) return // Prevent multiple logout attempts
+  if (loginStore.isSpinning) return
 
   try {
     await loginStore.fetchLogout()

@@ -5,8 +5,8 @@
         <h2 class="form-title font-bold text-4xl">Welcome Admin</h2>
 
         <a-form @submit="login" layout="vertical">
-          <a-form-item name="username" label="Username">
-            <a-input v-model:value="username" placeholder="Enter your username" autocomplete="username" />
+          <a-form-item name="email" label="Email">
+            <a-input v-model:value="email" type="email" placeholder="Enter your email" autocomplete="email" />
           </a-form-item>
 
           <a-form-item name="password" label="Password">
@@ -28,13 +28,8 @@
           </a-form-item>
 
           <a-form-item>
-            <a-button 
-              html-type="submit" 
-              block 
-              class="!font-bold custom-dark-btn"
-              :loading="isLoading"
-              :disabled="isLoading"
-            >
+            <a-button html-type="submit" block class="!font-bold custom-dark-btn" :loading="isLoading"
+              :disabled="isLoading">
               {{ isLoading ? 'Logging in...' : 'Log In' }}
             </a-button>
           </a-form-item>
@@ -73,7 +68,7 @@ const isLoading = ref(false);
 const errors = ref<Partial<Error>>({});
 
 // Bind login form inputs
-const username = ref('');
+const email = ref('');
 const password = ref('');
 
 // Snackbar state
@@ -87,12 +82,14 @@ let snackbarTimeout: NodeJS.Timeout | null = null;
 
 // Watch and sync with store.user
 watchEffect(() => {
-  loginStore.user.email = username.value;
+  console.log('Form values updated - Email:', email.value, 'Password:', password.value ? '***' : 'empty');
+  loginStore.user.email = email.value;
   loginStore.user.password = password.value;
 });
 
 // Snackbar methods
 const showSnackbar = (message: string, type: 'success' | 'error' | 'info' | 'loading' = 'info', duration: number = 4000) => {
+
   // Clear existing timeout
   if (snackbarTimeout) {
     clearTimeout(snackbarTimeout);
@@ -120,73 +117,123 @@ const closeSnackbar = () => {
   }
 };
 
+// Add email validation
 const validateForm = () => {
+  console.log('Validating form...');
   // Email validation
-  if (!username.value.trim()) {
-    showSnackbar("Username is required", 'error');
+  if (!email.value.trim()) {
+    console.log('Validation failed: Email is required');
+    showSnackbar("Email is required", 'error');
+    return false;
+  }
+  
+  // Simple email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.value)) {
+    console.log('Validation failed: Invalid email format', email.value);
+    showSnackbar("Please enter a valid email address", 'error');
     return false;
   }
   
   // Password validation
   if (!password.value.trim()) {
+    console.log('Validation failed: Password is required');
     showSnackbar("Password is required", 'error');
     return false;
   }
   
+  console.log('Form validation passed');
   return true;
 };
 
 const login = async (e: Event) => {
   e.preventDefault();
-  
+  console.log('Login form submitted');
+
   if (!validateForm()) {
+    console.log('Login aborted: Form validation failed');
     return;
   }
 
   isLoading.value = true;
   closeSnackbar();
 
+  // Debug: Check what's being sent to the store
+  console.log('Login attempt with credentials:', {
+    email: email.value,
+    password: password.value,
+    storeEmail: loginStore.user.email,
+    storePassword: loginStore.user.password
+  });
+
   // Show loading snackbar
   showSnackbar("Logging in...", 'loading', 0);
 
   try {
+    console.log('Calling loginStore.fetchLogin()...');
     const response = await loginStore.fetchLogin();
-    
+    console.log('Login response received:', response);
+
     if (response && response.data) {
+      console.log('Login successful:', response.data);
       // Success case
       closeSnackbar();
       showSnackbar("Login successful! Redirecting...", 'success', 3000);
-      
+
       // Optional: Redirect after success message
       setTimeout(() => {
-        // Replace '/dashboard' with your desired redirect route
+        console.log('Redirecting to home page...');
         router.push('/');
       }, 1500);
-      
+
     } else {
       // Failed response
+      console.log('Login failed: No valid response data', response);
       closeSnackbar();
-      showSnackbar("Invalid username or password. Please try again.", 'error');
+      showSnackbar("Invalid email or password. Please try again.", 'error');
+    }
+
+  } catch (error: any) {
+    console.error('Login error caught:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response,
+      status: error.status,
+      statusCode: error.statusCode,
+      data: error.data
+    });
+    
+    closeSnackbar();
+
+    // Show specific error message based on error type
+    let errorMessage = "Email or password wrong";
+    
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (error?.data?.message) {
+      errorMessage = error.data.message;
+    } else if (error?.response?.data?.message) {
+      errorMessage = error.response.data.message;
     }
     
-  } catch (error: any) {
-    console.error('Login error:', error);
-    closeSnackbar();
-    
-    // Simple error message for all login failures
-    showSnackbar("Username or password wrong", 'error', 4000);
-    
+    showSnackbar(errorMessage, 'error', 4000);
+
   } finally {
+    console.log('Login process completed, setting isLoading to false');
     isLoading.value = false;
   }
 };
 
 // Clear snackbar when component unmounts
 onUnmounted(() => {
+  console.log('Login component unmounted');
   if (snackbarTimeout) {
     clearTimeout(snackbarTimeout);
   }
 });
+
+// Log component initialization
+console.log('Login component initialized');
 </script>
 
 <style scoped lang="css">
@@ -338,6 +385,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateX(100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);

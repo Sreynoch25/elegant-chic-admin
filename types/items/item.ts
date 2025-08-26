@@ -1,4 +1,4 @@
-import type { UploadFile } from 'ant-design-vue';
+
 
 export interface ItemResponse {
   success: boolean;
@@ -16,6 +16,7 @@ export interface ItemFormState {
   category_id: string;
   brand_id: string;
   season_id: string;
+  discount_id?: string 
   variants: ItemVariant[];
 }
 
@@ -98,7 +99,7 @@ export interface Item {
   discount_id: string | null;
   created_at: string;
   updated_at: string;
-  variants: Variant[]; // Added variants property
+  variants: Variant[]; 
   discount?: Discount | null;
 }
 
