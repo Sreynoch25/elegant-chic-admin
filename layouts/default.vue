@@ -37,9 +37,9 @@
               <NuxtLink to="/products">All Products</NuxtLink>
             </a-menu-item>
 
-            <a-menu-item key="products-inventory">
+            <!-- <a-menu-item key="products-inventory">
               <NuxtLink to="/products/inventory">Inventory</NuxtLink>
-            </a-menu-item>
+            </a-menu-item> -->
           </a-sub-menu>
 
           <!-- Categories -->
@@ -98,11 +98,11 @@
             <template #icon><file-text-outlined /></template>
             <NuxtLink to="/orders">All Orders</NuxtLink>
           </a-menu-item>
-
+<!-- 
           <a-menu-item key="orders-pending">
             <template #icon><clock-circle-outlined /></template>
             <NuxtLink to="/orders/pending">Pending Orders</NuxtLink>
-          </a-menu-item>
+          </a-menu-item> -->
 
           <a-menu-item v-if="adminProfileStore.hasPermission('delivery.view')" key="deliveries">
             <template #icon><truck-outlined /></template>
@@ -172,7 +172,7 @@
 
           <a-menu-item key="reports-customers">
             <template #icon><user-outlined /></template>
-            <NuxtLink to="/reports/customers">Customer Analytics</NuxtLink>
+            <NuxtLink to="/reports/customers">Recent Orders</NuxtLink>
           </a-menu-item>
 
           <!-- <a-menu-item key="reports-financial">
