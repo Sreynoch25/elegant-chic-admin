@@ -131,7 +131,7 @@
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'order_number'">
-            <a-button type="link" @click="viewOrderDetails(record)">
+            <a-button type="link" @click="viewOrderDetails(record )">
               {{ record.order_number }}
             </a-button>
           </template>
@@ -403,7 +403,7 @@ const onSearch = (value: string) => {
   console.log('Search:', value)
 }
 
-const viewOrderDetails = (record: DetailedItem): void => {
+const viewOrderDetails = (record: Record<string, any>): void => {
   console.log('View Order:', record)
   message.info(`Viewing details for order: ${record.order_number}`)
 }
