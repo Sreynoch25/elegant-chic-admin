@@ -11,6 +11,212 @@
       </template>
     </a-page-header>
 
+    <!-- Enhanced Filter Section -->
+    <a-card class="filter-card" style="margin-bottom: 16px;">
+      <a-form layout="vertical">
+        <a-row :gutter="16">
+          <!-- Search Input -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Search" style="margin-bottom: 0;">
+              <a-input
+                v-model:value="filters.search"
+                placeholder="Order #, Customer name, Email"
+                allow-clear
+                @pressEnter="handleSearch"
+                @input="debouncedSearch"
+              >
+                <template #prefix>
+                  <SearchOutlined />
+                </template>
+              </a-input>
+            </a-form-item>
+          </a-col>
+
+          <!-- Order Status Filter -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Order Status" style="margin-bottom: 0;">
+              <a-select
+                v-model:value="filters.status"
+                placeholder="All Statuses"
+                allow-clear
+                @change="handleSearch"
+              >
+                <a-select-option value="pending">
+                  <a-tag color="orange" size="small">Pending</a-tag>
+                </a-select-option>
+                <a-select-option value="accepted">
+                  <a-tag color="blue" size="small">Accepted</a-tag>
+                </a-select-option>
+                <a-select-option value="preparing">
+                  <a-tag color="cyan" size="small">Preparing</a-tag>
+                </a-select-option>
+                <a-select-option value="on_delivery">
+                  <a-tag color="purple" size="small">On Delivery</a-tag>
+                </a-select-option>
+                <a-select-option value="completed">
+                  <a-tag color="green" size="small">Completed</a-tag>
+                </a-select-option>
+                <a-select-option value="cancelled">
+                  <a-tag color="red" size="small">Cancelled</a-tag>
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+
+          <!-- Payment Status Filter -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Payment Status" style="margin-bottom: 0;">
+              <a-select
+                v-model:value="filters.paymentStatus"
+                placeholder="All Payments"
+                allow-clear
+                @change="handleSearch"
+              >
+                <a-select-option value="pending">
+                  <a-tag color="orange" size="small">Pending</a-tag>
+                </a-select-option>
+                <a-select-option value="completed">
+                  <a-tag color="green" size="small">Completed</a-tag>
+                </a-select-option>
+                <a-select-option value="failed">
+                  <a-tag color="red" size="small">Failed</a-tag>
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+
+          <!-- Date Range Filter -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Date Range" style="margin-bottom: 0;">
+              <a-range-picker
+                v-model:value="filters.dateRange"
+                style="width: 100%;"
+                @change="handleSearch"
+                :presets="datePresets"
+              />
+            </a-form-item>
+          </a-col>
+
+          <!-- Amount Range Filter -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Amount Range" style="margin-bottom: 0;">
+              <a-input-group compact>
+                <a-input
+                  v-model:value="filters.minAmount"
+                  placeholder="Min $"
+                  style="width: 50%; text-align: center;"
+                  type="number"
+                  @change="debouncedSearch"
+                />
+                <a-input
+                  v-model:value="filters.maxAmount"
+                  placeholder="Max $"
+                  style="width: 50%; text-align: center; border-left: 0;"
+                  type="number"
+                  @change="debouncedSearch"
+                />
+              </a-input-group>
+            </a-form-item>
+          </a-col>
+
+          <!-- Payment Method Filter -->
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="Payment Method" style="margin-bottom: 0;">
+              <a-select
+                v-model:value="filters.paymentMethod"
+                placeholder="All Methods"
+                allow-clear
+                @change="handleSearch"
+              >
+                <a-select-option value="card">Credit Card</a-select-option>
+                <a-select-option value="khqr">KHQR</a-select-option>
+                <a-select-option value="cash">Cash on Delivery</a-select-option>
+                <a-select-option value="bank_transfer">Bank Transfer</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+
+        <!-- Quick Filters Row -->
+        <a-row :gutter="8" style="margin-top: 16px;">
+          <a-col>
+            <a-space wrap>
+              <a-tag
+                :color="quickFilter === 'today' ? 'blue' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('today')"
+              >
+                Today's Orders
+              </a-tag>
+              <a-tag
+                :color="quickFilter === 'pending_payment' ? 'orange' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('pending_payment')"
+              >
+                Pending Payment
+              </a-tag>
+              <a-tag
+                :color="quickFilter === 'ready_to_ship' ? 'cyan' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('ready_to_ship')"
+              >
+                Ready to Ship
+              </a-tag>
+              <a-tag
+                :color="quickFilter === 'high_value' ? 'gold' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('high_value')"
+              >
+                High Value ($100+)
+              </a-tag>
+              <a-tag
+                :color="quickFilter === 'this_week' ? 'purple' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('this_week')"
+              >
+                This Week
+              </a-tag>
+              <a-tag
+                :color="quickFilter === 'need_attention' ? 'red' : 'default'"
+                style="cursor: pointer; user-select: none;"
+                @click="applyQuickFilter('need_attention')"
+              >
+                Need Attention
+              </a-tag>
+            </a-space>
+          </a-col>
+        </a-row>
+
+        <!-- Action Buttons Row -->
+        <a-row :gutter="8" style="margin-top: 16px;" justify="space-between">
+          <a-col>
+            <a-space>
+              <a-button @click="handleSearch" type="primary" :loading="loading">
+                <template #icon><SearchOutlined /></template>
+                Search
+              </a-button>
+              <a-button @click="clearFilters">
+                <template #icon><ClearOutlined /></template>
+                Clear
+              </a-button>
+              <a-button @click="showExportModal = true">
+                <template #icon><DownloadOutlined /></template>
+                Export
+              </a-button>
+            </a-space>
+          </a-col>
+          <a-col>
+            <a-space>
+              <!-- Filter Summary -->
+              <span class="filter-summary" v-if="hasActiveFilters">
+                {{ activeFilterCount }} filter(s) active
+              </span>
+            </a-space>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-card>
+
     <!-- Orders Table -->
     <a-card>
       <a-table
@@ -416,13 +622,53 @@ const exportLoading = ref(false);
 const exportFormat = ref("csv");
 const exportDateRange = ref<[Dayjs, Dayjs] | undefined>();
 const exportFields = ref(["customer", "items", "payment", "shipping"]);
+const quickFilter = ref<string | null>(null);
 
-// Filters
+// Enhanced filters
 const filters = ref({
   search: "",
   status: undefined as string | undefined,
   paymentStatus: undefined as string | undefined,
+  paymentMethod: undefined as string | undefined,
   dateRange: undefined as [Dayjs, Dayjs] | undefined,
+  minAmount: undefined as string | undefined,
+  maxAmount: undefined as string | undefined,
+});
+
+// Date presets for the date range picker
+const datePresets = [
+  { label: 'Today', value: [dayjs(), dayjs()] as [Dayjs, Dayjs] },
+  { label: 'Yesterday', value: [dayjs().subtract(1, 'day'), dayjs().subtract(1, 'day')] as [Dayjs, Dayjs] },
+  { label: 'This Week', value: [dayjs().startOf('week'), dayjs().endOf('week')] as [Dayjs, Dayjs] },
+  { label: 'Last Week', value: [dayjs().subtract(1, 'week').startOf('week'), dayjs().subtract(1, 'week').endOf('week')] as [Dayjs, Dayjs] },
+  { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
+  { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] as [Dayjs, Dayjs] },
+  { label: 'Last 30 Days', value: [dayjs().subtract(30, 'day'), dayjs()] as [Dayjs, Dayjs] },
+  { label: 'Last 90 Days', value: [dayjs().subtract(90, 'day'), dayjs()] as [Dayjs, Dayjs] },
+];
+
+// Computed properties
+const hasActiveFilters = computed(() => {
+  return !!(
+    filters.value.search ||
+    filters.value.status ||
+    filters.value.paymentStatus ||
+    filters.value.paymentMethod ||
+    filters.value.dateRange ||
+    filters.value.minAmount ||
+    filters.value.maxAmount
+  );
+});
+
+const activeFilterCount = computed(() => {
+  let count = 0;
+  if (filters.value.search) count++;
+  if (filters.value.status) count++;
+  if (filters.value.paymentStatus) count++;
+  if (filters.value.paymentMethod) count++;
+  if (filters.value.dateRange) count++;
+  if (filters.value.minAmount || filters.value.maxAmount) count++;
+  return count;
 });
 
 // Table columns configuration
@@ -532,7 +778,16 @@ const paginationConfig = computed(() => ({
   pageSizeOptions: ["10", "20", "50", "100"],
 }));
 
-// Fetch orders function
+// Debounced search
+let searchTimeout: NodeJS.Timeout;
+const debouncedSearch = () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
+};
+
+// Fetch orders function with enhanced filtering
 const fetchOrders = async (page = 1, size = pageSize.value) => {
   loading.value = true;
   error.value = null;
@@ -543,19 +798,28 @@ const fetchOrders = async (page = 1, size = pageSize.value) => {
       per_page: size.toString(),
     });
 
-    // Add filters to params
+    // Add all filters to params
     if (filters.value.search) {
       params.append("search", filters.value.search);
     }
     if (filters.value.status) {
-      params.append("status", filters.value.status);
+      params.append("order_status", filters.value.status);
     }
     if (filters.value.paymentStatus) {
       params.append("payment_status", filters.value.paymentStatus);
     }
+    if (filters.value.paymentMethod) {
+      params.append("payment_method", filters.value.paymentMethod);
+    }
     if (filters.value.dateRange?.length === 2) {
       params.append("start_date", filters.value.dateRange[0].format("YYYY-MM-DD"));
       params.append("end_date", filters.value.dateRange[1].format("YYYY-MM-DD"));
+    }
+    if (filters.value.minAmount) {
+      params.append("min_amount", filters.value.minAmount);
+    }
+    if (filters.value.maxAmount) {
+      params.append("max_amount", filters.value.maxAmount);
     }
 
     const { data } = await useFetchDataApi<ApiResponse>(`/orders?${params}`);
@@ -621,8 +885,45 @@ const clearFilters = () => {
     search: "",
     status: undefined,
     paymentStatus: undefined,
+    paymentMethod: undefined,
     dateRange: undefined,
+    minAmount: undefined,
+    maxAmount: undefined,
   };
+  quickFilter.value = null;
+  currentPage.value = 1;
+  fetchOrders();
+};
+
+// Quick filter functionality
+const applyQuickFilter = (filterType: string) => {
+  // Clear existing filters first
+  clearFilters();
+  quickFilter.value = filterType;
+
+  switch (filterType) {
+    case 'today':
+      filters.value.dateRange = [dayjs().startOf('day'), dayjs().endOf('day')];
+      break;
+    case 'pending_payment':
+      filters.value.paymentStatus = 'pending';
+      break;
+    case 'ready_to_ship':
+      filters.value.status = 'preparing';
+      break;
+    case 'high_value':
+      filters.value.minAmount = '100';
+      break;
+    case 'this_week':
+      filters.value.dateRange = [dayjs().startOf('week'), dayjs().endOf('week')];
+      break;
+    case 'need_attention':
+      // This could be orders that are pending for more than 24 hours
+      filters.value.status = 'pending';
+      filters.value.dateRange = [dayjs().subtract(30, 'day'), dayjs().subtract(1, 'day')];
+      break;
+  }
+  
   handleSearch();
 };
 
@@ -756,10 +1057,75 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Enhanced Filter Styles */
 .filter-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
 }
 
+.filter-summary {
+  font-size: 12px;
+  color: #666;
+  background: #f0f2ff;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}
+
+/* Quick filter tags hover effect */
+:deep(.ant-tag) {
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-tag:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Input group styling for amount range */
+:deep(.ant-input-group) {
+  display: flex;
+}
+
+:deep(.ant-input-group .ant-input:focus) {
+  border-color: #1890ff;
+  z-index: 1;
+}
+
+/* Form item spacing */
+:deep(.ant-form-item) {
+  margin-bottom: 8px;
+}
+
+:deep(.ant-form-item-label) {
+  padding-bottom: 4px;
+}
+
+:deep(.ant-form-item-label > label) {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Select option styling with tags */
+:deep(.ant-select-selection-item .ant-tag) {
+  margin: 0;
+}
+
+/* Range picker full width */
+:deep(.ant-picker) {
+  width: 100%;
+}
+
+/* Button group styling */
+:deep(.ant-btn-group .ant-btn:not(:first-child)) {
+  margin-left: -1px;
+}
+
+/* Original styles */
 .customer-info {
   display: flex;
   align-items: center;
@@ -788,5 +1154,20 @@ onMounted(() => {
 :deep(.ant-descriptions-item-label) {
   font-weight: 600;
   background: #fafafa;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-card {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+  
+  :deep(.ant-col) {
+    margin-bottom: 8px;
+  }
 }
 </style>

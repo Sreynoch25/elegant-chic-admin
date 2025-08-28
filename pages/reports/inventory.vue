@@ -147,23 +147,7 @@
               <a-tag>{{ record.size }}</a-tag>
             </template>
 
-            <!-- Actions -->
-            <template v-else-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" type="link">
-                  <template #icon>
-                    <EyeOutlined />
-                  </template>
-                  View
-                </a-button>
-                <a-button size="small" type="link">
-                  <template #icon>
-                    <EditOutlined />
-                  </template>
-                  Edit
-                </a-button>
-              </a-space>
-            </template>
+
           </template>
         </a-table>
       </a-card>
@@ -318,7 +302,7 @@ const tableColumns: TableColumnType<InventoryItem>[] = [
     dataIndex: 'item_name',
     key: 'item_name',
     sorter: (a: InventoryItem, b: InventoryItem) => a.item_name.localeCompare(b.item_name),
-    width: 200,
+    width: 180,
     fixed: 'left' as const
   },
   {
@@ -367,12 +351,7 @@ const tableColumns: TableColumnType<InventoryItem>[] = [
     key: 'stock_status',
     width: 120
   },
-  {
-    title: 'Actions',
-    key: 'actions',
-    fixed: 'right' as const,
-    width: 120
-  }
+
 ]
 
 const paginationConfig = {

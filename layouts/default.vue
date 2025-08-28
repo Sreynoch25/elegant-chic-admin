@@ -12,180 +12,176 @@
       </div>
 
       <!-- Navigation Menu -->
-<!-- Navigation Menu with Better Grouping -->
-<a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
-  <!-- Dashboard -->
-  <a-menu-item key="dashboard">
-    <template #icon><dashboard-outlined /></template>
-    <NuxtLink to="/">
-      <span>Dashboard</span>
-    </NuxtLink>
-  </a-menu-item>
-
-  <!-- User Management -->
-  <a-sub-menu key="user-management">
-    <template #icon><team-outlined /></template>
-    <template #title>User Management</template>
-    <a-menu-item key="users-all">
-      <template #icon><user-outlined /></template>
-      <NuxtLink to="/users">All Users</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="users-customer">
-      <template #icon><user-outlined /></template>
-      <NuxtLink to="/users/customer">Customers</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="roles">
-      <template #icon><safety-certificate-outlined /></template>
-      <NuxtLink to="/roles">Roles & Permissions</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="permissions">
-      <template #icon><key-outlined /></template>
-      <NuxtLink to="/roles/permission">Permissions</NuxtLink>
-    </a-menu-item>
-  </a-sub-menu>
-
-  <!-- Catalog Management -->
-  <a-sub-menu key="catalog">
-    <template #icon><appstore-outlined /></template>
-    <template #title>Catalog Management</template>
-    
-    <!-- Products -->
-    <a-sub-menu key="products">
-      <template #icon><shopping-outlined /></template>
-      <template #title>Products</template>
-      <a-menu-item key="products-list">
-        <NuxtLink to="/products">All Products</NuxtLink>
-      </a-menu-item>
-      <a-menu-item key="products-inventory">
-        <NuxtLink to="/products/inventory">Inventory</NuxtLink>
-      </a-menu-item>
-    </a-sub-menu>
-
-    <!-- Categories -->
-    <a-sub-menu key="categories">
-      <template #icon><folder-outlined /></template>
-      <template #title>Categories</template>
-      <a-menu-item key="categories-list">
-        <NuxtLink to="/categories">Categories</NuxtLink>
-      </a-menu-item>
-      <a-menu-item key="categories-group">
-        <NuxtLink to="/categories/group">Category Groups</NuxtLink>
-      </a-menu-item>
-    </a-sub-menu>
-
-    <!-- Product Attributes -->
-    <a-sub-menu key="attributes">
-      <template #icon><tags-outlined /></template>
-      <template #title>Attributes</template>
-      <a-menu-item key="brands">
-        <template #icon><crown-outlined /></template>
-        <NuxtLink to="/brands">Brands</NuxtLink>
-      </a-menu-item>
-      <a-menu-item key="colors">
-        <template #icon><bg-colors-outlined /></template>
-        <NuxtLink to="/colors">Colors</NuxtLink>
-      </a-menu-item>
-      <a-menu-item key="seasons">
-        <template #icon><calendar-outlined /></template>
-        <NuxtLink to="/seasons">Seasons</NuxtLink>
-      </a-menu-item>
-      <a-sub-menu key="sizes">
-        <template #icon><pic-right-outlined /></template>
-        <template #title>Sizes</template>
-        <a-menu-item key="size-group">
-          <NuxtLink to="/sizes/group">Size Groups</NuxtLink>
+      <a-menu v-model:selectedKeys="selectedKeys" v-model:openKeys="openKeys" theme="dark" mode="inline">
+        <!-- Dashboard -->
+        <a-menu-item v-if="adminProfileStore.hasPermission('dashboard.view')" key="dashboard">
+          <template #icon><dashboard-outlined /></template>
+          <NuxtLink to="/">
+            <span>Dashboard</span>
+          </NuxtLink>
         </a-menu-item>
-        <a-menu-item key="sizes-list">
-          <NuxtLink to="/sizes">All Sizes</NuxtLink>
-        </a-menu-item>
-      </a-sub-menu>
-    </a-sub-menu>
-  </a-sub-menu>
 
-  <!-- Sales & Orders -->
-  <a-sub-menu key="sales">
-    <template #icon><shopping-cart-outlined /></template>
-    <template #title>Sales & Orders</template>
-    <a-menu-item key="orders-all">
-      <template #icon><file-text-outlined /></template>
-      <NuxtLink to="/orders">All Orders</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="orders-pending">
-      <template #icon><clock-circle-outlined /></template>
-      <NuxtLink to="/orders/pending">Pending Orders</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="orders-completed">
-      <template #icon><check-circle-outlined /></template>
-      <NuxtLink to="/orders/completed">Completed Orders</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="deliveries">
-      <template #icon><truck-outlined /></template>
-      <NuxtLink to="/deliveries">Deliveries</NuxtLink>
-    </a-menu-item>
-  </a-sub-menu>
+        <!-- Catalog Management -->
+        <a-sub-menu
+          v-if="adminProfileStore.hasPermission('item.view') || adminProfileStore.hasPermission('category.view')"
+          key="catalog">
+          <template #icon><appstore-outlined /></template>
+          <template #title>Catalog Management</template>
 
-  <!-- Marketing -->
-  <a-sub-menu key="marketing">
-    <template #icon><gift-outlined /></template>
-    <template #title>Marketing</template>
-    <a-menu-item key="promotions">
-      <template #icon><percentage-outlined /></template>
-      <NuxtLink to="/promotions/discounts">Promotions & Discounts</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="banners">
-      <template #icon><picture-outlined /></template>
-      <NuxtLink to="/banners">Banners</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="campaigns">
-      <template #icon><mail-outlined /></template>
-      <NuxtLink to="/campaigns">Email Campaigns</NuxtLink>
-    </a-menu-item>
-  </a-sub-menu>
+          <!-- Products -->
+          <a-sub-menu v-if="adminProfileStore.hasPermission('item.view')" key="products">
+            <template #icon><shopping-outlined /></template>
+            <template #title>Products</template>
 
-  <!-- Reports & Analytics -->
-  <a-sub-menu key="analytics">
-    <template #icon><bar-chart-outlined /></template>
-    <template #title>Reports & Analytics</template>
-    <a-menu-item key="reports-sales">
-      <template #icon><line-chart-outlined /></template>
-      <NuxtLink to="/reports/sales">Sales Reports</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="reports-inventory">
-      <template #icon><database-outlined /></template>
-      <NuxtLink to="/reports/inventory">Inventory Reports</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="reports-customers">
-      <template #icon><user-outlined /></template>
-      <NuxtLink to="/reports/customers">Customer Analytics</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="reports-financial">
-      <template #icon><dollar-circle-outlined /></template>
-      <NuxtLink to="/reports/financial">Financial Reports</NuxtLink>
-    </a-menu-item>
-  </a-sub-menu>
+            <a-menu-item key="products-list">
+              <NuxtLink to="/products">All Products</NuxtLink>
+            </a-menu-item>
 
-  <!-- System Settings -->
-  <a-sub-menu key="settings">
-    <template #icon><setting-outlined /></template>
-    <template #title>Settings</template>
-    <a-menu-item key="settings-general">
-      <template #icon><control-outlined /></template>
-      <NuxtLink to="/settings">General Settings</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="settings-payment">
-      <template #icon><credit-card-outlined /></template>
-      <NuxtLink to="/settings/payment">Payment Settings</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="settings-shipping">
-      <template #icon><car-outlined /></template>
-      <NuxtLink to="/settings/shipping">Shipping Settings</NuxtLink>
-    </a-menu-item>
-    <a-menu-item key="settings-notifications">
-      <template #icon><notification-outlined /></template>
-      <NuxtLink to="/settings/notifications">Notifications</NuxtLink>
-    </a-menu-item>
-  </a-sub-menu>
-</a-menu>
+            <a-menu-item key="products-inventory">
+              <NuxtLink to="/products/inventory">Inventory</NuxtLink>
+            </a-menu-item>
+          </a-sub-menu>
+
+          <!-- Categories -->
+          <a-sub-menu v-if="adminProfileStore.hasPermission('category.view')" key="categories">
+            <template #icon><folder-outlined /></template>
+            <template #title>Categories</template>
+
+            <a-menu-item key="categories-list">
+              <NuxtLink to="/categories">Categories</NuxtLink>
+            </a-menu-item>
+
+            <a-menu-item key="categories-group">
+              <NuxtLink to="/categories/group">Category Groups</NuxtLink>
+            </a-menu-item>
+          </a-sub-menu>
+
+          <!-- Attributes -->
+          <a-sub-menu v-if="adminProfileStore.hasPermission('item.view')" key="attributes">
+            <template #icon><tags-outlined /></template>
+            <template #title>Attributes</template>
+
+            <a-menu-item key="brands">
+              <template #icon><crown-outlined /></template>
+              <NuxtLink to="/brands">Brands</NuxtLink>
+            </a-menu-item>
+
+            <a-menu-item key="colors">
+              <template #icon><bg-colors-outlined /></template>
+              <NuxtLink to="/colors">Colors</NuxtLink>
+            </a-menu-item>
+
+            <a-menu-item key="seasons">
+              <template #icon><calendar-outlined /></template>
+              <NuxtLink to="/seasons">Seasons</NuxtLink>
+            </a-menu-item>
+
+            <a-sub-menu key="sizes">
+              <template #icon><pic-right-outlined /></template>
+              <template #title>Sizes</template>
+              <a-menu-item key="size-group">
+                <NuxtLink to="/sizes/group">Size Groups</NuxtLink>
+              </a-menu-item>
+              <a-menu-item key="sizes-list">
+                <NuxtLink to="/sizes">All Sizes</NuxtLink>
+              </a-menu-item>
+            </a-sub-menu>
+          </a-sub-menu>
+        </a-sub-menu>
+
+        <!-- Sales & Orders -->
+        <a-sub-menu v-if="adminProfileStore.hasPermission('order.view')" key="sales">
+          <template #icon><shopping-cart-outlined /></template>
+          <template #title>Sales & Orders</template>
+
+          <a-menu-item key="orders-all">
+            <template #icon><file-text-outlined /></template>
+            <NuxtLink to="/orders">All Orders</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item key="orders-pending">
+            <template #icon><clock-circle-outlined /></template>
+            <NuxtLink to="/orders/pending">Pending Orders</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('delivery.view')" key="deliveries">
+            <template #icon><truck-outlined /></template>
+            <NuxtLink to="/deliveries">Deliveries</NuxtLink>
+          </a-menu-item>
+        </a-sub-menu>
+        
+        <!-- User Management -->
+        <a-sub-menu v-if="adminProfileStore.hasPermission('user.view') || adminProfileStore.hasPermission('role.view')"
+          key="user-management">
+          <template #icon><team-outlined /></template>
+          <template #title>User Management</template>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('user.view')" key="users-all">
+            <template #icon><user-outlined /></template>
+            <NuxtLink to="/users">All Users</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('customer.view')" key="users-customer">
+            <template #icon><user-outlined /></template>
+            <NuxtLink to="/users/customer">Customers</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('role.view')" key="roles">
+            <template #icon><safety-certificate-outlined /></template>
+            <NuxtLink to="/roles">Roles & Permissions</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('role.view')" key="permissions">
+            <template #icon><key-outlined /></template>
+            <NuxtLink to="/roles/permission">Permissions</NuxtLink>
+          </a-menu-item>
+        </a-sub-menu>
+
+        <!-- Marketing -->
+        <a-sub-menu
+          v-if="adminProfileStore.hasPermission('promotion.view') || adminProfileStore.hasPermission('banner.view')"
+          key="marketing">
+          <template #icon><gift-outlined /></template>
+          <template #title>Marketing</template>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('promotion.view')" key="promotions">
+            <template #icon><percentage-outlined /></template>
+            <NuxtLink to="/promotions/discounts">Promotions & Discounts</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item v-if="adminProfileStore.hasPermission('banner.view')" key="banners">
+            <template #icon><picture-outlined /></template>
+            <NuxtLink to="/banners">Banners</NuxtLink>
+          </a-menu-item>
+        </a-sub-menu>
+
+        <!-- Reports -->
+        <a-sub-menu key="analytics">
+          <template #icon><bar-chart-outlined /></template>
+          <template #title>Reports & Analytics</template>
+
+          <a-menu-item key="reports-sales">
+            <template #icon><line-chart-outlined /></template>
+            <NuxtLink to="/reports/sales">Sales Reports</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item key="reports-inventory">
+            <template #icon><database-outlined /></template>
+            <NuxtLink to="/reports/inventory">Inventory Reports</NuxtLink>
+          </a-menu-item>
+
+          <a-menu-item key="reports-customers">
+            <template #icon><user-outlined /></template>
+            <NuxtLink to="/reports/customers">Customer Analytics</NuxtLink>
+          </a-menu-item>
+
+          <!-- <a-menu-item key="reports-financial">
+            <template #icon><dollar-circle-outlined /></template>
+            <NuxtLink to="/reports/financial">Financial Reports</NuxtLink>
+          </a-menu-item> -->
+        </a-sub-menu>
+      </a-menu>
+
     </a-layout-sider>
 
     <!-- Mobile overlay backdrop when sidebar is open -->
@@ -207,17 +203,16 @@
 
         <!-- Right Header Content -->
         <div class="flex items-center gap-4">
-
           <!-- User Avatar Dropdown -->
           <a-dropdown>
-            <a-avatar class="cursor-pointer bg-blue-500">
+            <a-avatar class="cursor-pointer bg-blue-500" :src="profileImageUrl">
               <template #icon><user-outlined /></template>
             </a-avatar>
 
             <template #overlay>
               <a-menu>
                 <a-menu-item key="profile" @click="showProfile">
-                  <a-spin :spinning="loading" size="small">
+                  <a-spin :spinning="adminProfileStore.loading" size="small">
                     Profile
                   </a-spin>
                 </a-menu-item>
@@ -236,12 +231,12 @@
 
       <!-- Profile Dialog -->
       <a-modal v-model:open="profileModalVisible" title="Admin Profile" :footer="null" width="500px" centered>
-        <div v-if="adminProfile" class="profile-content">
+        <div v-if="adminProfileStore.adminProfile" class="profile-content">
           <!-- Profile Image Section -->
           <div class="profile-image-section">
             <div class="image-container">
               <a-avatar :src="profileImageUrl" :size="100" class="profile-avatar">
-                {{ getAdminInitials(adminProfile) }}
+                {{ getAdminInitials(adminProfileStore.adminProfile) }}
               </a-avatar>
               <div class="image-overlay" @click="handleImageUpload">
                 <CameraOutlined class="camera-icon" />
@@ -252,53 +247,52 @@
 
           <!-- Profile Information -->
           <a-descriptions :column="1" bordered class="profile-details">
-
             <a-descriptions-item label="Name">
               <div class="profile-name">
-                {{ adminProfile.name }}
+                {{ adminProfileStore.adminProfile.name }}
               </div>
             </a-descriptions-item>
 
             <a-descriptions-item label="Email">
               <div class="profile-email">
                 <MailOutlined class="email-icon" />
-                {{ adminProfile.email }}
+                {{ adminProfileStore.adminProfile.email }}
               </div>
             </a-descriptions-item>
 
             <a-descriptions-item label="Role">
-              <a-tag :color="getRoleColor(adminProfile.roles)" class="role-tag">
-                {{ formatRole(adminProfile.roles) }}
+              <a-tag :color="getRoleColor(adminProfileStore.adminProfile.roles)" class="role-tag">
+                {{ formatRole(adminProfileStore.adminProfile.roles) }}
               </a-tag>
             </a-descriptions-item>
 
             <a-descriptions-item label="Status">
-              <a-badge :status="adminProfile.is_active ? 'success' : 'error'"
-                :text="adminProfile.is_active ? 'Active' : 'Inactive'" />
+              <a-badge :status="adminProfileStore.adminProfile.is_active ? 'success' : 'error'"
+                :text="adminProfileStore.adminProfile.is_active ? 'Active' : 'Inactive'" />
             </a-descriptions-item>
 
             <a-descriptions-item label="Created">
               <div class="date-info">
                 <CalendarOutlined class="date-icon" />
-                {{ formatDate(adminProfile.created_at) }}
+                {{ formatDate(adminProfileStore.adminProfile.created_at) }}
               </div>
             </a-descriptions-item>
 
             <a-descriptions-item label="Last Updated">
               <div class="date-info">
                 <ClockCircleOutlined class="date-icon" />
-                {{ formatDate(adminProfile.updated_at) }}
+                {{ formatDate(adminProfileStore.adminProfile.updated_at) }}
               </div>
             </a-descriptions-item>
           </a-descriptions>
 
           <!-- Action Buttons -->
           <div class="profile-actions">
-            <a-button type="primary" @click="editProfile" :loading="updateLoading">
+            <a-button type="primary" @click="editProfile" :loading="adminProfileStore.updateLoading">
               <EditOutlined />
               Edit Profile
             </a-button>
-            <a-button @click="refreshProfile" :loading="loading">
+            <a-button @click="refreshProfile" :loading="adminProfileStore.loading">
               <ReloadOutlined />
               Refresh
             </a-button>
@@ -306,16 +300,16 @@
         </div>
 
         <!-- Loading State -->
-        <div v-else-if="loading" class="loading-container">
+        <div v-else-if="adminProfileStore.loading" class="loading-container">
           <a-spin size="large" />
           <p>Loading profile...</p>
         </div>
 
         <!-- Error State -->
-        <div v-else-if="error" class="error-container">
-          <a-result status="error" title="Failed to Load Profile" :sub-title="error">
+        <div v-else-if="adminProfileStore.error" class="error-container">
+          <a-result status="error" title="Failed to Load Profile" :sub-title="adminProfileStore.error">
             <template #extra>
-              <a-button type="primary" @click="fetchAdminProfile">
+              <a-button type="primary" @click="refreshProfile">
                 Try Again
               </a-button>
             </template>
@@ -324,8 +318,8 @@
       </a-modal>
 
       <!-- Edit Profile Modal -->
-      <a-modal v-model:open="editModalVisible" title="Edit Profile" :confirm-loading="updateLoading" @ok="updateProfile"
-        @cancel="cancelEdit" width="400px">
+      <a-modal v-model:open="editModalVisible" title="Edit Profile" :confirm-loading="adminProfileStore.updateLoading"
+        @ok="updateProfile" @cancel="cancelEdit" width="400px">
         <a-form ref="formRef" :model="editForm" :rules="formRules" layout="vertical">
           <a-form-item label="Name" name="name">
             <a-input v-model:value="editForm.name" placeholder="Enter your name" />
@@ -348,75 +342,96 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, reactive, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { useLoginStore } from '~/stores/login/loginStore';
+import { useLoginStore } from '~/stores/login/auth'
+import { useAdminProfileStore } from '~/stores/userinfo/userinfostore'
 import type { FormInstance } from 'ant-design-vue'
 
-// Reactive state
+// Reactive state for layout
 const collapsed = ref(false)
 const isMobile = ref(false)
 const siderVisible = ref(false)
 const openKeys = ref<string[]>([])
 
-// Store and router instances
+// Modal states
+const profileModalVisible = ref(false)
+const editModalVisible = ref(false)
+const fileInput = ref<HTMLInputElement>()
+const formRef = ref<FormInstance>()
+
+// Store instances
 const route = useRoute()
 const loginStore = useLoginStore()
+const adminProfileStore = useAdminProfileStore()
 
-// Menu selection logic
+// Edit form
+const editForm = reactive({
+  name: '',
+  email: ''
+})
+
+const formRules = {
+  name: [
+    { required: true, message: 'Please input your name!' },
+    { min: 2, message: 'Name must be at least 2 characters!' }
+  ],
+  email: [
+    { required: true, message: 'Please input your email!' },
+    { type: 'email' as const, message: 'Please input a valid email!' }
+  ]
+}
+
+// Computed properties
+const profileImageUrl = computed(() => adminProfileStore.profileImageUrl)
+
 const selectedKeys = computed(() => {
   const path = route.path
 
   // Route to menu key mapping
-// Updated route mapping for the improved menu structure
-const routeMapping: Record<string, string> = {
-  '/': 'dashboard',
-  
-  // User Management
-  '/users': 'users-all',
-  '/users/customer': 'users-customer', 
-  '/roles': 'roles',
-  '/roles/permission': 'permissions',
-  
-  // Catalog Management - Products
-  '/products': 'products-list',
-  '/products/inventory': 'products-inventory',
-  
-  // Catalog Management - Categories
-  '/categories': 'categories-list',
-  '/categories/group': 'categories-group',
-  
-  // Catalog Management - Attributes
-  '/brands': 'brands',
-  '/colors': 'colors', 
-  '/seasons': 'seasons',
-  '/sizes': 'sizes-list',
-  '/sizes/group': 'size-group',
-  
-  // Sales & Orders
-  '/orders': 'orders-all',
-  '/orders/pending': 'orders-pending',
-  '/orders/completed': 'orders-completed', 
-  '/deliveries': 'deliveries',
-  
-  // Marketing
-  '/promotions/discounts': 'promotions',
-  '/banners': 'banners',
-  '/campaigns': 'campaigns',
-  
-  // Reports & Analytics
-  '/reports/sales': 'reports-sales',
-  '/reports/inventory': 'reports-inventory',
-  '/reports/customers': 'reports-customers',
-  '/reports/financial': 'reports-financial',
-  
-  // Settings
-  // '/settings': 'settings-general',
-  // '/settings/payment': 'settings-payment', 
-  // '/settings/shipping': 'settings-shipping',
-  // '/settings/notifications': 'settings-notifications'
-}
+  const routeMapping: Record<string, string> = {
+    '/': 'dashboard',
+
+    // User Management
+    '/users': 'users-all',
+    '/users/customer': 'users-customer',
+    '/roles': 'roles',
+    '/roles/permission': 'permissions',
+
+    // Catalog Management - Products
+    '/products': 'products-list',
+    '/products/inventory': 'products-inventory',
+
+    // Catalog Management - Categories
+    '/categories': 'categories-list',
+    '/categories/group': 'categories-group',
+
+    // Catalog Management - Attributes
+    '/brands': 'brands',
+    '/colors': 'colors',
+    '/seasons': 'seasons',
+    '/sizes': 'sizes-list',
+    '/sizes/group': 'size-group',
+
+    // Sales & Orders
+    '/orders': 'orders-all',
+    '/orders/pending': 'orders-pending',
+    '/orders/completed': 'orders-completed',
+    '/deliveries': 'deliveries',
+
+    // Marketing
+    '/promotions/discounts': 'promotions',
+    '/banners': 'banners',
+    '/campaigns': 'campaigns',
+
+    // Reports & Analytics
+    '/reports/sales': 'reports-sales',
+    '/reports/inventory': 'reports-inventory',
+    '/reports/customers': 'reports-customers',
+    '/reports/financial': 'reports-financial',
+  }
+
   // Check for exact matches first
   if (routeMapping[path]) {
     return [routeMapping[path]]
@@ -460,6 +475,7 @@ watch(selectedKeys, (newKeys) => {
   }
 }, { immediate: true })
 
+// Layout handlers
 const handleCollapse = (isCollapsed: boolean) => {
   collapsed.value = isCollapsed
 }
@@ -480,7 +496,7 @@ const toggleSider = () => {
   }
 }
 
-// Logout functionality using Pinia store
+// Authentication handlers
 const handleLogout = async () => {
   if (loginStore.isSpinning) return
 
@@ -493,101 +509,23 @@ const handleLogout = async () => {
   }
 }
 
-export interface AdminProfileResponse {
-  status: number
-  message: string
-  data: AdminProfile
-}
-
-export interface AdminProfile {
-  id: number
-  name: string
-  email: string
-  roles: string
-  profile_image: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
-
-// Reactive variables
-const adminProfile = ref<AdminProfile | null>(null)
-const loading = ref(false)
-const updateLoading = ref(false)
-const error = ref<string | null>(null)
-const profileModalVisible = ref(false)
-const editModalVisible = ref(false)
-const fileInput = ref<HTMLInputElement>()
-const formRef = ref<FormInstance>()
-
-// Cache-busted image URL to prevent browser caching issues
-const profileImageUrl = computed(() => {
-  if (!adminProfile.value?.profile_image) return undefined
-  // Add timestamp to prevent caching issues
-  const timestamp = Date.now()
-  const baseUrl = adminProfile.value.profile_image
-  const separator = baseUrl.includes('?') ? '&' : '?'
-  return `${baseUrl}${separator}v=${timestamp}`
-})
-
-// Edit form
-const editForm = reactive({
-  name: '',
-  email: ''
-})
-
-const formRules = {
-  name: [
-    { required: true, message: 'Please input your name!' },
-    { min: 2, message: 'Name must be at least 2 characters!' }
-  ],
-  email: [
-    { required: true, message: 'Please input your email!' },
-    { type: 'email' as const, message: 'Please input a valid email!' }
-  ]
-}
-
-// Fetch admin profile - corrected to handle single object response
-const fetchAdminProfile = async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    const { data } = await useFetchDataApi<AdminProfileResponse>('/profile')
-
-    if (data.value?.status === 200 && data.value.data) {
-      adminProfile.value = data.value.data
-    } else {
-      error.value = data.value?.message || 'Failed to fetch profile'
-      message.error(error.value)
-    }
-  } catch (err: any) {
-    console.error('❌ Fetch Error:', err)
-    error.value = 'Failed to fetch admin profile'
-    message.error(error.value)
-  } finally {
-    loading.value = false
-  }
-}
-
-// Show profile dialog
+// Profile handlers
 const showProfile = async () => {
   profileModalVisible.value = true
-  if (!adminProfile.value) {
-    await fetchAdminProfile()
+  if (!adminProfileStore.adminProfile) {
+    await adminProfileStore.fetchAdminProfile()
   }
 }
 
-// Refresh profile
 const refreshProfile = async () => {
-  await fetchAdminProfile()
+  await adminProfileStore.fetchAdminProfile()
 }
 
 // Edit profile functions
 const editProfile = () => {
-  if (adminProfile.value) {
-    editForm.name = adminProfile.value.name
-    editForm.email = adminProfile.value.email
+  if (adminProfileStore.adminProfile) {
+    editForm.name = adminProfileStore.adminProfile.name
+    editForm.email = adminProfileStore.adminProfile.email
     editModalVisible.value = true
   }
 }
@@ -597,32 +535,12 @@ const updateProfile = async () => {
 
   try {
     await formRef.value.validateFields()
-    updateLoading.value = true
-
-    const formData = new FormData()
-    formData.append('_method', 'PUT')
-    formData.append('name', editForm.name)
-    formData.append('email', editForm.email)
-
-    const { data } = await useFetchDataApi<AdminProfileResponse>('/profile', {
-      method: 'POST',
-      body: formData
-    })
-    if (data.value?.data) {
-      await fetchAdminProfile()
-      message.success('Profile updated successfully!')
-      editModalVisible.value = false
-    } else {
-      message.error(data.value?.message || 'Failed to update profile')
-    }
+    await adminProfileStore.updateProfile(editForm.name, editForm.email)
+    editModalVisible.value = false
   } catch (err: any) {
     console.error('❌ Update Error:', err)
-    message.error('Failed to update profile')
-  } finally {
-    updateLoading.value = false
   }
 }
-
 
 const cancelEdit = () => {
   editModalVisible.value = false
@@ -640,54 +558,15 @@ const onImageChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
 
-  if (!file) return
-
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    message.error('Please select an image file!')
-    return
-  }
-
-  // Validate file size (e.g., 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    message.error('Image size must be less than 5MB!')
-    return
-  }
-
-  try {
-    updateLoading.value = true
-
-    const formData = new FormData()
-    formData.append('_method', 'PUT')
-    formData.append('profile_image', file)
-
-    const { data } = await useFetchDataApi<AdminProfileResponse>('/profile', {
-      method: 'POST',
-      body: formData
-    })
-
-    if (data.value?.data) {
-      await fetchAdminProfile()
-      const updatedProfile = data.value.data
-     
-      adminProfile.value = updatedProfile
-
-      message.success('Profile image updated successfully!')
-    } else {
-      message.error(data.value?.message || 'Failed to update profile image')
-    }
-  } catch (err: any) {
-    console.error('❌ Image Upload Error:', err)
-    message.error('Failed to update profile image')
-  } finally {
-    updateLoading.value = false
+  if (file) {
+    await adminProfileStore.updateProfileImage(file)
     // Clear the input
     if (target) target.value = ''
   }
 }
 
 // Utility functions
-const getAdminInitials = (profile: AdminProfile) => {
+const getAdminInitials = (profile: any) => {
   return profile.name.charAt(0).toUpperCase()
 }
 
@@ -716,9 +595,10 @@ const formatDate = (date: string) => {
   })
 }
 
-// Load profile on component mount
+// Initialize profile on mount
 onMounted(async () => {
-  await fetchAdminProfile()
+  await adminProfileStore.fetchAdminProfile()
+  await adminProfileStore.loadPermissions()
 })
 </script>
 

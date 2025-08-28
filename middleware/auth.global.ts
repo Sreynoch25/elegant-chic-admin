@@ -1,4 +1,4 @@
-import { useLoginStore } from "~/stores/login/loginStore";
+import { useLoginStore } from "~/stores/login/auth";
 
 
 export default defineNuxtRouteMiddleware((to, from) => {

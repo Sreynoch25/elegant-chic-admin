@@ -10,12 +10,7 @@
         <p class="page-description">Manage admin users, roles, and permissions</p>
       </div>
       <div class="header-actions">
-        <a-button 
-          type="primary" 
-          size="large"
-          @click="showCreateModal"
-          :icon="h(PlusOutlined)"
-        >
+        <a-button type="primary" size="large" @click="showCreateModal" :icon="h(PlusOutlined)">
           Add New User
         </a-button>
       </div>
@@ -24,36 +19,20 @@
     <!-- Statistics Cards -->
     <div class="stats-grid">
       <a-card class="stat-card">
-        <a-statistic
-          title="Total Users"
-          :value="users.length"
-          :value-style="{ color: '#3f8600' }"
-          :prefix="h(TeamOutlined)"
-        />
+        <a-statistic title="Total Users" :value="users.length" :value-style="{ color: '#3f8600' }"
+          :prefix="h(TeamOutlined)" />
       </a-card>
       <a-card class="stat-card">
-        <a-statistic
-          title="Active Users"
-          :value="users.filter(u => u.is_active).length"
-          :value-style="{ color: '#1890ff' }"
-          :prefix="h(CheckCircleOutlined)"
-        />
+        <a-statistic title="Active Users" :value="users.filter(u => u.is_active).length"
+          :value-style="{ color: '#1890ff' }" :prefix="h(CheckCircleOutlined)" />
       </a-card>
       <a-card class="stat-card">
-        <a-statistic
-          title="Super Admins"
-          :value="users.filter(u => u.role === 'super_admin').length"
-          :value-style="{ color: '#722ed1' }"
-          :prefix="h(CrownOutlined)"
-        />
+        <a-statistic title="Super Admins" :value="users.filter(u => u.role === 'super_admin').length"
+          :value-style="{ color: '#722ed1' }" :prefix="h(CrownOutlined)" />
       </a-card>
       <a-card class="stat-card">
-        <a-statistic
-          title="Admins"
-          :value="users.filter(u => u.role === 'admin').length"
-          :value-style="{ color: '#fa8c16' }"
-          :prefix="h(SafetyOutlined)"
-        />
+        <a-statistic title="Admins" :value="users.filter(u => u.role === 'admin').length"
+          :value-style="{ color: '#fa8c16' }" :prefix="h(SafetyOutlined)" />
       </a-card>
     </div>
 
@@ -65,40 +44,24 @@
           Users List
         </span>
       </template>
-      
+
       <template #extra>
         <div class="table-actions">
-          <a-input-search
-            v-model:value="searchText"
-            placeholder="Search users..."
-            style="width: 300px"
-            :suffix-icon="h(SearchOutlined)"
-            @search="onSearch"
-          />
+          <a-input-search v-model:value="searchText" placeholder="Search users..." style="width: 300px"
+            :suffix-icon="h(SearchOutlined)" @search="onSearch" />
           <a-button @click="refreshData" :icon="h(ReloadOutlined)">
             Refresh
           </a-button>
         </div>
       </template>
 
-      <a-table
-        :columns="columns"
-        :data-source="filteredUsers"
-        :loading="loading"
-        :pagination="pagination"
-        row-key="id"
-        class="users-table"
-        :scroll="{ x: 1200 }"
-      >
+      <a-table :columns="columns" :data-source="filteredUsers" :loading="loading" :pagination="pagination" row-key="id"
+        class="users-table" :scroll="{ x: 1200 }">
         <!-- Profile Image Column -->
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'profile_image'">
-            <a-avatar
-              :size="40"
-              :src="record.profile_image"
-              :icon="record.profile_image ? undefined : h(UserOutlined)"
-              class="user-avatar"
-            />
+            <a-avatar :size="40" :src="record.profile_image" :icon="record.profile_image ? undefined : h(UserOutlined)"
+              class="user-avatar" />
           </template>
 
           <!-- Role Badge Column -->
@@ -111,14 +74,10 @@
             </a-tag>
           </template>
 
-          <!-- Status Column -->
+          <!-- Status Column with Toggle Switch -->
           <template v-else-if="column.key === 'is_active'">
-            <a-tag :color="record.is_active ? 'success' : 'error'">
-              <template #icon>
-                <component :is="record.is_active ? CheckCircleOutlined : StopOutlined" />
-              </template>
-              {{ record.is_active ? 'Active' : 'Inactive' }}
-            </a-tag>
+            <a-switch v-model:checked="record.is_active" checked-children="Active" un-checked-children="Inactive"
+              :checked-value="true" :un-checked-value="false" @change="toggleUserStatus(record.id)" />
           </template>
 
           <!-- Created At Column -->
@@ -133,29 +92,13 @@
           <template v-else-if="column.key === 'actions'">
             <div class="action-buttons">
               <a-tooltip title="Edit User">
-                <a-button
-                  type="text"
-                  size="small"
-                  :icon="h(EditOutlined)"
-                  @click="showEditModal(record)"
-                  class="action-btn edit-btn"
-                />
+                <a-button type="text" size="small" :icon="h(EditOutlined)" @click="showEditModal(record)"
+                  class="action-btn edit-btn" />
               </a-tooltip>
               <a-tooltip title="Delete User">
-                <a-popconfirm
-                  title="Are you sure you want to delete this user?"
-                  ok-text="Yes"
-                  cancel-text="No"
-                  @confirm="deleteUser(record.id)"
-                  placement="topRight"
-                >
-                  <a-button
-                    type="text"
-                    size="small"
-                    danger
-                    :icon="h(DeleteOutlined)"
-                    class="action-btn delete-btn"
-                  />
+                <a-popconfirm title="Are you sure you want to delete this user?" ok-text="Yes" cancel-text="No"
+                  @confirm="deleteUser(record.id)" placement="topRight">
+                  <a-button type="text" size="small" danger :icon="h(DeleteOutlined)" class="action-btn delete-btn" />
                 </a-popconfirm>
               </a-tooltip>
             </div>
@@ -165,125 +108,50 @@
     </a-card>
 
     <!-- Create/Edit Modal -->
-    <a-modal
-      v-model:open="modalVisible"
-      :title="modalMode === 'create' ? 'Create New User' : 'Edit User'"
-      width="600px"
-      :confirm-loading="submitting"
-      @ok="handleSubmit"
-      @cancel="handleCancel"
-      class="user-modal"
-    >
-      <a-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        layout="vertical"
-        class="user-form"
-      >
+    <a-modal v-model:open="modalVisible" :title="modalMode === 'create' ? 'Create New User' : 'Edit User'" width="600px"
+      :confirm-loading="submitting" @ok="handleSubmit" @cancel="handleCancel" class="user-modal">
+      <a-form ref="formRef" :model="formData" :rules="formRules" layout="vertical" class="user-form">
         <div class="form-grid">
-          <a-form-item
-            label="Full Name"
-            name="name"
-            class="form-item"
-          >
-            <a-input
-              v-model:value="formData.name"
-              placeholder="Enter full name"
-              :prefix="h(UserOutlined)"
-              size="large"
-            />
+          <a-form-item label="Full Name" name="name" class="form-item">
+            <a-input v-model:value="formData.name" placeholder="Enter full name" :prefix="h(UserOutlined)"
+              size="large" />
           </a-form-item>
 
-          <a-form-item
-            label="Email Address"
-            name="email"
-            class="form-item"
-          >
-            <a-input
-              v-model:value="formData.email"
-              placeholder="Enter email address"
-              :prefix="h(MailOutlined)"
-              size="large"
-            />
+          <a-form-item label="Email Address" name="email" class="form-item">
+            <a-input v-model:value="formData.email" placeholder="Enter email address" :prefix="h(MailOutlined)"
+              size="large" />
           </a-form-item>
         </div>
 
         <div class="form-grid">
-          <a-form-item
-            label="Role"
-            name="role"
-            class="form-item"
-          >
-            <a-select
-              v-model:value="formData.role"
-              placeholder="Select user role"
-              size="large"
-              :options="roleOptions"
-            >
+          <a-form-item label="Role" name="role" class="form-item">
+            <a-select v-model:value="formData.role" placeholder="Select user role" size="large" :options="roleOptions">
               <template #suffixIcon>
                 <SafetyOutlined />
               </template>
             </a-select>
           </a-form-item>
 
-          <a-form-item
-            label="Status"
-            name="is_active"
-            class="form-item"
-          >
-            <a-switch
-              v-model:checked="formData.is_active"
-              checked-children="Active"
-              un-checked-children="Inactive"
-              :checked-value="true"
-              :un-checked-value="false"
-            />
+          <a-form-item label="Status" name="is_active" class="form-item">
+            <a-switch v-model:checked="formData.is_active" checked-children="Active" un-checked-children="Inactive"
+              :checked-value="true" :un-checked-value="false" />
           </a-form-item>
         </div>
 
-        <a-form-item
-          v-if="modalMode === 'create'"
-          label="Password"
-          name="password"
-          class="form-item"
-        >
-          <a-input-password
-            v-model:value="formData.password"
-            placeholder="Enter password"
-            :prefix="h(LockOutlined)"
-            size="large"
-          />
+        <a-form-item v-if="modalMode === 'create'" label="Password" name="password" class="form-item">
+          <a-input-password v-model:value="formData.password" placeholder="Enter password" :prefix="h(LockOutlined)"
+            size="large" />
         </a-form-item>
 
-        <a-form-item
-          v-if="modalMode === 'create'"
-          label="Confirm Password"
-          name="password_confirmation"
-          class="form-item"
-        >
-          <a-input-password
-            v-model:value="formData.password_confirmation"
-            placeholder="Confirm password"
-            :prefix="h(LockOutlined)"
-            size="large"
-          />
+        <a-form-item v-if="modalMode === 'create'" label="Confirm Password" name="password_confirmation"
+          class="form-item">
+          <a-input-password v-model:value="formData.password_confirmation" placeholder="Confirm password"
+            :prefix="h(LockOutlined)" size="large" />
         </a-form-item>
 
-        <a-form-item
-          label="Profile Image"
-          name="profile_image"
-          class="form-item"
-        >
-          <a-upload
-            v-model:file-list="fileList"
-            :before-upload="beforeUpload"
-            :custom-request="handleUpload"
-            list-type="picture-card"
-            class="profile-upload"
-            :max-count="1"
-            accept="image/*"
-          >
+        <a-form-item label="Profile Image" name="profile_image" class="form-item">
+          <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :custom-request="handleUpload"
+            list-type="picture-card" class="profile-upload" :max-count="1" accept="image/*">
             <div v-if="fileList.length < 1">
               <PlusOutlined />
               <div style="margin-top: 8px">Upload</div>
@@ -299,7 +167,7 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { message } from 'ant-design-vue'
 import type { UploadFile, TableColumnProps, FormInstance } from 'ant-design-vue'
-import type { Role, Response} from "~/types/roles/role";
+import type { Role, Response } from "~/types/roles/role";
 
 import {
   UserOutlined,
@@ -328,7 +196,7 @@ interface User {
   id: number
   name: string
   email: string
-  role: string // Changed from roles to role
+  role: string
   profile_image: string | null
   is_active: boolean
   created_at: string
@@ -346,7 +214,7 @@ interface FormData {
   id: number | null
   name: string
   email: string
-  role: string // Changed from roles to role
+  role: string
   password: string
   password_confirmation: string
   profile_image: string | null
@@ -401,8 +269,8 @@ const formRules = computed(() => ({
     { min: 6, message: 'Password must be at least 6 characters', type: 'string' as const }
   ],
   password_confirmation: [
-    { 
-      required: modalMode.value === 'create' && !!formData.password, 
+    {
+      required: modalMode.value === 'create' && !!formData.password,
       message: 'Please confirm password',
       type: 'string' as const
     },
@@ -418,7 +286,7 @@ const formRules = computed(() => ({
   ]
 }))
 
-// Table columns
+// Table columns - Fixed type issues
 const columns: TableColumnProps[] = [
   {
     title: 'Avatar',
@@ -431,13 +299,13 @@ const columns: TableColumnProps[] = [
     title: 'Name',
     dataIndex: 'name',
     key: 'name',
-    sorter: (a: any, b: any) => a.name?.localeCompare(b.name) || 0
+    sorter: (a: any, b: any) => (a.name || '').localeCompare(b.name || '')
   },
   {
     title: 'Email',
     dataIndex: 'email',
     key: 'email',
-    sorter: (a: any, b: any) => a.email?.localeCompare(b.email) || 0
+    sorter: (a: any, b: any) => (a.email || '').localeCompare(b.email || '')
   },
   {
     title: 'Role',
@@ -484,29 +352,27 @@ const pagination = computed(() => ({
   total: filteredUsers.value.length,
   showSizeChanger: true,
   showQuickJumper: true,
-  showTotal: (total: number, range: [number, number]) => 
+  showTotal: (total: number, range: [number, number]) =>
     `${range[0]}-${range[1]} of ${total} items`
 }))
 
 // Computed
 const filteredUsers = computed(() => {
   if (!searchText.value) return users.value
-  return users.value.filter(user => 
+  return users.value.filter(user =>
     user.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
     user.email.toLowerCase().includes(searchText.value.toLowerCase()) ||
     user.role.toLowerCase().includes(searchText.value.toLowerCase())
   )
 })
 
-
 const roleOptions = computed(() => {
   return roles.value.map(role => ({
-    label: role.name,  
-    value: role.name      
+    label: role.name,
+    value: role.name
   }))
 })
 const roles = ref<Role[]>([])
-
 
 const fetchRoles = async () => {
   loading.value = true
@@ -523,7 +389,7 @@ const fetchRoles = async () => {
   }
 }
 
-// Declare useFetchDataApi function (assuming it's a composable)
+// Declare useFetchDataApi function
 declare function useFetchDataApi(url: string, options?: any): Promise<{
   data: Ref<ApiResponse<any> | null>
 }>
@@ -546,35 +412,73 @@ const fetchUsers = async () => {
   }
 }
 
+const toggleUserStatus = async (id: number) => {
+  const user = users.value.find(u => u.id === id)
+  if (!user) return
+
+  const originalStatus = user.is_active
+  user.is_active = !user.is_active // Optimistic update
+
+  try {
+    const { data } = await useFetchDataApi(`/admin-users/${id}/toggle-status`, {
+      method: 'PATCH'
+    })
+
+    if (data.value?.success) {
+      message.success(data.value.message)
+    } else {
+      user.is_active = originalStatus // Revert on failure
+      message.error(data.value?.message || 'Failed to toggle status')
+    }
+  } catch (error) {
+    user.is_active = originalStatus // Revert on error
+    console.error('Error toggling user status:', error)
+    message.error('Failed to toggle status')
+  }
+}
+
 const showCreateModal = () => {
   modalMode.value = 'create'
   resetForm()
   modalVisible.value = true
 }
 
-const showEditModal = (user: any) => {
-  modalMode.value = 'edit'
-  formData.id = user.id
-  formData.name = user.name
-  formData.email = user.email
-  formData.role = user.role
-  formData.is_active = user.is_active
-  formData.profile_image = user.profile_image
-  formData.password = ''
-  formData.password_confirmation = ''
+// Update the showEditModal function to handle the type conversion
+const showEditModal = (user: Record<string, any>) => {
+  // Convert the record to a User object
+  const userData: User = {
+    id: user.id as number,
+    name: user.name as string,
+    email: user.email as string,
+    role: user.role as string,
+    profile_image: user.profile_image as string | null,
+    is_active: user.is_active as boolean,
+    created_at: user.created_at as string,
+    updated_at: user.updated_at as string
+  };
   
-  if (user.profile_image) {
+  modalMode.value = 'edit';
+  formData.id = userData.id;
+  formData.name = userData.name;
+  formData.email = userData.email;
+  formData.role = userData.role;
+  formData.is_active = userData.is_active;
+  formData.profile_image = userData.profile_image;
+  formData.password = '';
+  formData.password_confirmation = '';
+  
+  if (userData.profile_image) {
     fileList.value = [{
       uid: '-1',
       name: 'profile.jpg',
       status: 'done',
-      url: user.profile_image
-    }]
+      url: userData.profile_image
+    } as UploadFile];
   } else {
-    fileList.value = []
+    fileList.value = [];
   }
   
-  modalVisible.value = true
+  modalVisible.value = true;
 }
 
 const handleSubmit = async () => {
@@ -582,23 +486,21 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     submitting.value = true
 
-    const endpoint = modalMode.value === 'create' 
-      ? '/admin-users' 
+    const endpoint = modalMode.value === 'create'
+      ? '/admin-users'
       : `/admin-users/${formData.id}`
-    
+
     const method = modalMode.value === 'create' ? 'POST' : 'PUT'
-    
+
     const payload: any = {
       name: formData.name,
       email: formData.email,
       role: formData.role,
-      is_active: formData.is_active ? 1 : 0, // Convert boolean to integer
+      is_active: formData.is_active ? 1 : 0,
     }
 
-    // Always include profile_image in payload (null if not set)
     payload.profile_image = formData.profile_image
 
-    // Only include password fields for creation
     if (modalMode.value === 'create') {
       payload.password = formData.password
       payload.password_confirmation = formData.password_confirmation
@@ -680,14 +582,14 @@ const beforeUpload = (file: File) => {
     message.error('You can only upload image files!')
     return false
   }
-  
+
   const isLt2M = file.size / 1024 / 1024 < 2
   if (!isLt2M) {
     message.error('Image must be smaller than 2MB!')
     return false
   }
-  
-  return false // Prevent automatic upload
+
+  return false
 }
 
 const handleUpload = (options: any) => {
@@ -698,15 +600,14 @@ const handleUpload = (options: any) => {
     reader.onload = (e) => {
       const result = e.target?.result as string
       formData.profile_image = result
-      
-      // Update the file list to show the uploaded image
+
       fileList.value = [{
         uid: file.uid || '-1',
         name: file.name || 'image.jpg',
         status: 'done',
         url: result
-      }]
-      
+      } as UploadFile]
+
       console.log('Image uploaded successfully:', result.substring(0, 50) + '...')
       onSuccess?.(result)
     }
@@ -721,10 +622,9 @@ const handleUpload = (options: any) => {
   }
 }
 
-// Helper functions
 const formatRole = (role: string) => {
   if (role === 'no_role') return 'No Role'
-  return role.split('_').map(word => 
+  return role.split('_').map(word =>
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ')
 }
@@ -757,7 +657,6 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// Lifecycle
 onMounted(async () => {
   await fetchUsers()
   await fetchRoles()
@@ -838,6 +737,10 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
+.users-table .ant-switch {
+  margin: 0 auto;
+}
+
 .user-avatar {
   border: 2px solid #f0f0f0;
 }
@@ -915,22 +818,22 @@ onMounted(async () => {
   .admin-users-container {
     padding: 16px;
   }
-  
+
   .page-header {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .table-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -940,7 +843,7 @@ onMounted(async () => {
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .header-content h1 {
     font-size: 24px;
   }

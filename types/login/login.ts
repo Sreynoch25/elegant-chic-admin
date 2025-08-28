@@ -19,4 +19,5 @@ export type BaseResponse<T> = {
     token: string | null;
     errors: string;
     error: string;
+    permissions: string[];
   }

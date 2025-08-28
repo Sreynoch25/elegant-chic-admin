@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLoginStore } from '~/stores/login/loginStore';
+import { useLoginStore } from '~/stores/login/auth';
 import { useRouter } from 'vue-router';
 
 definePageMeta({

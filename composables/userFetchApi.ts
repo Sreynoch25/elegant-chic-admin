@@ -2,7 +2,7 @@ import type { UseFetchOptions } from 'nuxt/app';
 import { defu } from 'defu';
 import { storeToRefs } from 'pinia';
 import { $fetch } from 'ofetch'; // optional, in case Nuxt doesn't auto-define
-import { useLoginStore } from '~/stores/login/loginStore';
+import { useLoginStore } from '~/stores/login/auth';
 
 export async function useFetchDataApi<T>(
   url: string,
