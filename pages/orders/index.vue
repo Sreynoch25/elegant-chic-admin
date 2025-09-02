@@ -98,7 +98,7 @@
           </a-col>
 
           <!-- Amount Range Filter -->
-          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+          <!-- <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Amount Range" style="margin-bottom: 0;">
               <a-input-group compact>
                 <a-input
@@ -117,7 +117,7 @@
                 />
               </a-input-group>
             </a-form-item>
-          </a-col>
+          </a-col> -->
 
           <!-- Payment Method Filter -->
           <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
@@ -199,10 +199,10 @@
                 <template #icon><ClearOutlined /></template>
                 Clear
               </a-button>
-              <a-button @click="showExportModal = true">
+              <!-- <a-button @click="showExportModal = true">
                 <template #icon><DownloadOutlined /></template>
                 Export
-              </a-button>
+              </a-button> -->
             </a-space>
           </a-col>
           <a-col>

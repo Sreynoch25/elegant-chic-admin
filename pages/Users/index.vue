@@ -23,7 +23,7 @@
           :prefix="h(TeamOutlined)" />
       </a-card>
       <a-card class="stat-card">
-        <a-statistic title="Active Users" :value="users.filter(u => u.is_active).length"
+        <a-statistic title="Active Users" :value="activeUsersCount"
           :value-style="{ color: '#1890ff' }" :prefix="h(CheckCircleOutlined)" />
       </a-card>
       <a-card class="stat-card">
@@ -52,6 +52,10 @@
           <a-button @click="refreshData" :icon="h(ReloadOutlined)">
             Refresh
           </a-button>
+          <!-- Debug Button -->
+          <a-button @click="debugUserData" type="dashed" :icon="h(SafetyOutlined)">
+            Debug Data
+          </a-button>
         </div>
       </template>
 
@@ -74,10 +78,18 @@
             </a-tag>
           </template>
 
-          <!-- Status Column with Toggle Switch -->
+          <!-- Status Column with Toggle Switch - FIXED VERSION -->
           <template v-else-if="column.key === 'is_active'">
-            <a-switch v-model:checked="record.is_active" checked-children="Active" un-checked-children="Inactive"
-              :checked-value="true" :un-checked-value="false" @change="toggleUserStatus(record.id)" />
+            <div class="status-switch-container">
+              <a-switch 
+                :checked="normalizeBoolean(record.is_active)" 
+                checked-children="Active" 
+                un-checked-children="Inactive"
+                @change="(checked) => toggleUserStatus(record.id)" 
+                :loading="record.toggling || false"
+                class="status-switch"
+              />
+            </div>
           </template>
 
           <!-- Created At Column -->
@@ -132,9 +144,24 @@
             </a-select>
           </a-form-item>
 
+          <!-- FIXED STATUS FORM ITEM -->
           <a-form-item label="Status" name="is_active" class="form-item">
-            <a-switch v-model:checked="formData.is_active" checked-children="Active" un-checked-children="Inactive"
-              :checked-value="true" :un-checked-value="false" />
+            <div class="status-form-control">
+              <a-switch 
+                v-model:checked="formData.is_active" 
+                checked-children="Active" 
+                un-checked-children="Inactive"
+                size="default"
+                class="form-status-switch"
+              />
+              <span class="status-label">
+                {{ formData.is_active ? 'Active' : 'Inactive' }}
+              </span>
+              <!-- Debug info (remove in production) -->
+              <small class="debug-info">
+                Form Value: {{ formData.is_active }} ({{ typeof formData.is_active }})
+              </small>
+            </div>
           </a-form-item>
         </div>
 
@@ -198,9 +225,10 @@ interface User {
   email: string
   role: string
   profile_image: string | null
-  is_active: boolean
+  is_active: boolean  // Ensure this is always boolean
   created_at: string
   updated_at?: string
+  toggling?: boolean  // Add for loading state
 }
 
 interface ApiResponse<T> {
@@ -218,15 +246,7 @@ interface FormData {
   password: string
   password_confirmation: string
   profile_image: string | null
-  is_active: boolean
-}
-
-interface RoleColors {
-  [key: string]: string
-}
-
-interface RoleIcons {
-  [key: string]: any
+  is_active: boolean  // Ensure this is always boolean
 }
 
 // Reactive data
@@ -239,7 +259,7 @@ const searchText = ref('')
 const formRef = ref<FormInstance>()
 const fileList = ref<UploadFile[]>([])
 
-// Form data
+// Form data with proper boolean initialization
 const formData = reactive<FormData>({
   id: null,
   name: '',
@@ -248,45 +268,204 @@ const formData = reactive<FormData>({
   password: '',
   password_confirmation: '',
   profile_image: null,
-  is_active: true
+  is_active: true  // Default to true (boolean)
 })
 
-// Form validation rules
-const formRules = computed(() => ({
-  name: [
-    { required: true, message: 'Please enter full name', type: 'string' as const },
-    { min: 2, max: 50, message: 'Name must be between 2 and 50 characters', type: 'string' as const }
-  ],
-  email: [
-    { required: true, message: 'Please enter email address', type: 'email' as const },
-    { type: 'email' as const, message: 'Please enter a valid email address' }
-  ],
-  role: [
-    { required: true, message: 'Please select a role', type: 'string' as const }
-  ],
-  password: [
-    { required: modalMode.value === 'create', message: 'Please enter password', type: 'string' as const },
-    { min: 6, message: 'Password must be at least 6 characters', type: 'string' as const }
-  ],
-  password_confirmation: [
-    {
-      required: modalMode.value === 'create' && !!formData.password,
-      message: 'Please confirm password',
-      type: 'string' as const
-    },
-    {
-      validator: (_: any, value: string) => {
-        if (modalMode.value === 'create' && formData.password && value !== formData.password) {
-          return Promise.reject(new Error('Passwords do not match'))
-        }
-        return Promise.resolve()
-      },
-      type: 'string' as const
-    }
-  ]
-}))
+// UTILITY FUNCTIONS FOR BOOLEAN NORMALIZATION
+const normalizeBoolean = (value: any): boolean => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true'
+  return false
+}
 
-// Table columns - Fixed type issues
+const normalizeBooleanForAPI = (value: boolean): number | boolean => {
+  // Change this based on what your API expects:
+  return value ? 1 : 0  // If API expects numbers
+  // return value          // If API expects booleans
+}
+
+// Enhanced computed statistics
+const activeUsersCount = computed(() => {
+  return users.value.filter(u => normalizeBoolean(u.is_active)).length
+})
+
+const filteredUsers = computed(() => {
+  if (!searchText.value) return users.value
+  return users.value.filter(user =>
+    user.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchText.value.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchText.value.toLowerCase())
+  )
+})
+
+// FIXED FETCH USERS WITH DATA NORMALIZATION
+const fetchUsers = async () => {
+  loading.value = true
+  try {
+    const { data } = await useFetchDataApi('/admin-users', {
+      method: 'GET'
+    })
+    if (data.value?.success) {
+      // Normalize all user data, especially is_active
+      users.value = (data.value.data as any[]).map(user => ({
+        ...user,
+        is_active: normalizeBoolean(user.is_active), // Convert to boolean
+        toggling: false // Add loading state for individual switches
+      }))
+      console.log('Normalized users data:', users.value.map(u => ({ 
+        id: u.id, 
+        name: u.name, 
+        is_active: u.is_active, 
+        type: typeof u.is_active 
+      })))
+    }
+  } catch (error) {
+    message.error('Failed to fetch users')
+    console.error('Error fetching users:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// FIXED TOGGLE FUNCTION WITH PROPER HANDLING
+const toggleUserStatus = async (id: number, newStatus?: boolean) => {
+  const user = users.value.find(u => u.id === id)
+  if (!user) {
+    console.error('User not found:', id)
+    return
+  }
+
+  console.log('Toggling user status:', {
+    userId: id,
+    currentStatus: user.is_active,
+    newStatus: newStatus,
+    userObject: user
+  })
+
+  // Set loading state for this specific user
+  user.toggling = true
+  const originalStatus = user.is_active
+
+  try {
+    // If newStatus is provided (from switch change), use it. Otherwise toggle current status
+    const targetStatus = newStatus !== undefined ? newStatus : !originalStatus
+    
+    const { data } = await useFetchDataApi(`/admin-users/${id}/toggle-status`, {
+      method: 'PATCH',
+      body: {
+        is_active: normalizeBooleanForAPI(targetStatus)
+      }
+    })
+
+    console.log('API Response:', data.value)
+
+    if (data.value?.success) {
+      // Update the user's status
+      user.is_active = targetStatus
+      message.success(data.value.message || `User ${targetStatus ? 'activated' : 'deactivated'} successfully`)
+    } else {
+      // Revert the change if API failed
+      user.is_active = originalStatus
+      message.error(data.value?.message || 'Failed to toggle status')
+    }
+  } catch (error) {
+    // Revert the change on error
+    user.is_active = originalStatus
+    console.error('Error toggling user status:', error)
+    message.error('Failed to toggle status')
+  } finally {
+    user.toggling = false
+  }
+}
+
+// FIXED FORM SUBMISSION
+const handleSubmit = async () => {
+  try {
+    await formRef.value?.validate()
+    submitting.value = true
+
+    const endpoint = modalMode.value === 'create'
+      ? '/admin-users'
+      : `/admin-users/${formData.id}`
+
+    const method = modalMode.value === 'create' ? 'POST' : 'PUT'
+
+    const payload: any = {
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      is_active: normalizeBooleanForAPI(formData.is_active), // Normalize for API
+      profile_image: formData.profile_image
+    }
+
+    if (modalMode.value === 'create') {
+      payload.password = formData.password
+      payload.password_confirmation = formData.password_confirmation
+    }
+
+    console.log('Submitting payload:', {
+      ...payload,
+      is_active: `${payload.is_active} (${typeof payload.is_active})`,
+      profile_image: payload.profile_image ? 'Has image data' : null
+    })
+
+    const { data } = await useFetchDataApi(endpoint, {
+      method,
+      body: payload
+    })
+
+    if (data.value?.success) {
+      message.success(data.value.message)
+      modalVisible.value = false
+      await fetchUsers() // Refresh and normalize data
+    } else {
+      message.error(data.value?.message || 'Operation failed')
+    }
+  } catch (error) {
+    console.error('Error submitting form:', error)
+    message.error('Operation failed')
+  } finally {
+    submitting.value = false
+  }
+}
+
+// FIXED EDIT MODAL FUNCTION
+const showEditModal = (user: Record<string, any>) => {
+  console.log('Editing user:', user)
+  
+  modalMode.value = 'edit'
+  
+  // Normalize the data when loading into form
+  formData.id = user.id as number
+  formData.name = user.name as string
+  formData.email = user.email as string
+  formData.role = user.role as string
+  formData.is_active = normalizeBoolean(user.is_active) // Normalize to boolean
+  formData.profile_image = user.profile_image as string | null
+  formData.password = ''
+  formData.password_confirmation = ''
+  
+  console.log('Form data after loading:', {
+    is_active: formData.is_active,
+    type: typeof formData.is_active
+  })
+  
+  if (user.profile_image) {
+    fileList.value = [{
+      uid: '-1',
+      name: 'profile.jpg',
+      status: 'done',
+      url: user.profile_image
+    } as UploadFile]
+  } else {
+    fileList.value = []
+  }
+  
+  modalVisible.value = true
+}
+
+// FIXED TABLE COLUMNS
 const columns: TableColumnProps[] = [
   {
     title: 'Avatar',
@@ -322,11 +501,14 @@ const columns: TableColumnProps[] = [
     title: 'Status',
     dataIndex: 'is_active',
     key: 'is_active',
+    width: 150,
     filters: [
       { text: 'Active', value: true },
       { text: 'Inactive', value: false }
     ],
-    onFilter: (value: string | number | boolean, record: any) => record.is_active === value
+    onFilter: (value: string | number | boolean, record: any) => {
+      return normalizeBoolean(record.is_active) === Boolean(value)
+    }
   },
   {
     title: 'Created At',
@@ -345,6 +527,44 @@ const columns: TableColumnProps[] = [
   }
 ]
 
+// Form validation rules with proper boolean handling
+const formRules = computed(() => ({
+  name: [
+    { required: true, message: 'Please enter full name', type: 'string' as const },
+    { min: 2, max: 50, message: 'Name must be between 2 and 50 characters', type: 'string' as const }
+  ],
+  email: [
+    { required: true, message: 'Please enter email address', type: 'email' as const },
+    { type: 'email' as const, message: 'Please enter a valid email address' }
+  ],
+  role: [
+    { required: true, message: 'Please select a role', type: 'string' as const }
+  ],
+  password: [
+    { required: modalMode.value === 'create', message: 'Please enter password', type: 'string' as const },
+    { min: 6, message: 'Password must be at least 6 characters', type: 'string' as const }
+  ],
+  password_confirmation: [
+    {
+      required: modalMode.value === 'create' && !!formData.password,
+      message: 'Please confirm password',
+      type: 'string' as const
+    },
+    {
+      validator: (_: any, value: string) => {
+        if (modalMode.value === 'create' && formData.password && value !== formData.password) {
+          return Promise.reject(new Error('Passwords do not match'))
+        }
+        return Promise.resolve()
+      },
+      type: 'string' as const
+    }
+  ],
+  is_active: [
+    { required: true, message: 'Please set user status', type: 'boolean' as const }
+  ]
+}))
+
 // Pagination
 const pagination = computed(() => ({
   current: 1,
@@ -356,15 +576,7 @@ const pagination = computed(() => ({
     `${range[0]}-${range[1]} of ${total} items`
 }))
 
-// Computed
-const filteredUsers = computed(() => {
-  if (!searchText.value) return users.value
-  return users.value.filter(user =>
-    user.name.toLowerCase().includes(searchText.value.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchText.value.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchText.value.toLowerCase())
-  )
-})
+const roles = ref<Role[]>([])
 
 const roleOptions = computed(() => {
   return roles.value.map(role => ({
@@ -372,8 +584,28 @@ const roleOptions = computed(() => {
     value: role.name
   }))
 })
-const roles = ref<Role[]>([])
 
+// DEBUGGING FUNCTION
+const debugUserData = () => {
+  console.log('=== USER DATA DEBUG ===')
+  console.log('Total users:', users.value.length)
+  console.log('Form data is_active:', formData.is_active, typeof formData.is_active)
+  
+  users.value.forEach((user, index) => {
+    console.log(`User ${index + 1}:`, {
+      id: user.id,
+      name: user.name,
+      is_active: user.is_active,
+      type: typeof user.is_active,
+      normalized: normalizeBoolean(user.is_active)
+    })
+  })
+  
+  console.log('Active users count:', activeUsersCount.value)
+  message.info('Check console for debug information')
+}
+
+// Rest of your methods remain the same...
 const fetchRoles = async () => {
   loading.value = true
   try {
@@ -389,146 +621,10 @@ const fetchRoles = async () => {
   }
 }
 
-// Declare useFetchDataApi function
-declare function useFetchDataApi(url: string, options?: any): Promise<{
-  data: Ref<ApiResponse<any> | null>
-}>
-
-// Methods
-const fetchUsers = async () => {
-  loading.value = true
-  try {
-    const { data } = await useFetchDataApi('/admin-users', {
-      method: 'GET'
-    })
-    if (data.value?.success) {
-      users.value = data.value.data as User[]
-    }
-  } catch (error) {
-    message.error('Failed to fetch users')
-    console.error('Error fetching users:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const toggleUserStatus = async (id: number) => {
-  const user = users.value.find(u => u.id === id)
-  if (!user) return
-
-  const originalStatus = user.is_active
-  user.is_active = !user.is_active // Optimistic update
-
-  try {
-    const { data } = await useFetchDataApi(`/admin-users/${id}/toggle-status`, {
-      method: 'PATCH'
-    })
-
-    if (data.value?.success) {
-      message.success(data.value.message)
-    } else {
-      user.is_active = originalStatus // Revert on failure
-      message.error(data.value?.message || 'Failed to toggle status')
-    }
-  } catch (error) {
-    user.is_active = originalStatus // Revert on error
-    console.error('Error toggling user status:', error)
-    message.error('Failed to toggle status')
-  }
-}
-
 const showCreateModal = () => {
   modalMode.value = 'create'
   resetForm()
   modalVisible.value = true
-}
-
-// Update the showEditModal function to handle the type conversion
-const showEditModal = (user: Record<string, any>) => {
-  // Convert the record to a User object
-  const userData: User = {
-    id: user.id as number,
-    name: user.name as string,
-    email: user.email as string,
-    role: user.role as string,
-    profile_image: user.profile_image as string | null,
-    is_active: user.is_active as boolean,
-    created_at: user.created_at as string,
-    updated_at: user.updated_at as string
-  };
-  
-  modalMode.value = 'edit';
-  formData.id = userData.id;
-  formData.name = userData.name;
-  formData.email = userData.email;
-  formData.role = userData.role;
-  formData.is_active = userData.is_active;
-  formData.profile_image = userData.profile_image;
-  formData.password = '';
-  formData.password_confirmation = '';
-  
-  if (userData.profile_image) {
-    fileList.value = [{
-      uid: '-1',
-      name: 'profile.jpg',
-      status: 'done',
-      url: userData.profile_image
-    } as UploadFile];
-  } else {
-    fileList.value = [];
-  }
-  
-  modalVisible.value = true;
-}
-
-const handleSubmit = async () => {
-  try {
-    await formRef.value?.validate()
-    submitting.value = true
-
-    const endpoint = modalMode.value === 'create'
-      ? '/admin-users'
-      : `/admin-users/${formData.id}`
-
-    const method = modalMode.value === 'create' ? 'POST' : 'PUT'
-
-    const payload: any = {
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      is_active: formData.is_active ? 1 : 0,
-    }
-
-    payload.profile_image = formData.profile_image
-
-    if (modalMode.value === 'create') {
-      payload.password = formData.password
-      payload.password_confirmation = formData.password_confirmation
-    }
-
-    console.log('Submitting payload:', {
-      ...payload,
-      profile_image: payload.profile_image ? payload.profile_image.substring(0, 50) + '...' : null
-    })
-
-    const { data } = await useFetchDataApi(endpoint, {
-      method,
-      body: payload
-    })
-
-    if (data.value?.success) {
-      message.success(data.value.message)
-      modalVisible.value = false
-      await fetchUsers()
-    } else {
-      message.error(data.value?.message || 'Operation failed')
-    }
-  } catch (error) {
-    console.error('Error submitting form:', error)
-    message.error('Operation failed')
-  } finally {
-    submitting.value = false
-  }
 }
 
 const deleteUser = async (id: number) => {
@@ -562,7 +658,7 @@ const resetForm = () => {
   formData.password = ''
   formData.password_confirmation = ''
   formData.profile_image = null
-  formData.is_active = true
+  formData.is_active = true  // Reset to boolean true
   fileList.value = []
   formRef.value?.resetFields()
 }
@@ -608,7 +704,6 @@ const handleUpload = (options: any) => {
         url: result
       } as UploadFile]
 
-      console.log('Image uploaded successfully:', result.substring(0, 50) + '...')
       onSuccess?.(result)
     }
     reader.onerror = (error) => {
@@ -630,21 +725,21 @@ const formatRole = (role: string) => {
 }
 
 const getRoleColor = (role: string): string => {
-  const colors: RoleColors = {
+  const colors = {
     super_admin: 'purple',
     admin: 'blue',
     no_role: 'default'
   }
-  return colors[role] || 'default'
+  return colors[role as keyof typeof colors] || 'default'
 }
 
 const getRoleIcon = (role: string) => {
-  const icons: RoleIcons = {
+  const icons = {
     super_admin: CrownOutlined,
     admin: SafetyOutlined,
     no_role: UserOutlined
   }
-  return icons[role] || UserOutlined
+  return icons[role as keyof typeof icons] || UserOutlined
 }
 
 const formatDate = (dateString: string) => {
@@ -656,6 +751,11 @@ const formatDate = (dateString: string) => {
     minute: '2-digit'
   })
 }
+
+// Declare the API function
+declare function useFetchDataApi(url: string, options?: any): Promise<{
+  data: Ref<ApiResponse<any> | null>
+}>
 
 onMounted(async () => {
   await fetchUsers()
@@ -737,8 +837,26 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
-.users-table .ant-switch {
-  margin: 0 auto;
+/* FIXED SWITCH STYLES */
+.status-switch-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-switch {
+  margin: 0;
+}
+
+.status-switch.ant-switch-loading {
+  opacity: 0.7;
+}
+
+.debug-info {
+  color: #999;
+  font-size: 10px;
+  font-family: monospace;
 }
 
 .user-avatar {
@@ -802,6 +920,27 @@ onMounted(async () => {
   margin-bottom: 24px;
 }
 
+/* FIXED FORM STATUS STYLES */
+.status-form-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.form-status-switch {
+  flex-shrink: 0;
+}
+
+.status-label {
+  font-weight: 500;
+  color: #1890ff;
+}
+
+.status-label:has(+ .debug-info) {
+  margin-right: 8px;
+}
+
 .profile-upload {
   display: flex;
   justify-content: center;
@@ -811,6 +950,20 @@ onMounted(async () => {
   width: 120px !important;
   height: 120px !important;
   border-radius: 8px;
+}
+
+/* Switch Loading State */
+.ant-switch-loading .ant-switch-handle::before {
+  animation: ant-switch-loading 1s infinite linear;
+}
+
+@keyframes ant-switch-loading {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -837,6 +990,10 @@ onMounted(async () => {
   .form-grid {
     grid-template-columns: 1fr;
   }
+
+  .status-form-control {
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 480px) {
@@ -846,6 +1003,10 @@ onMounted(async () => {
 
   .header-content h1 {
     font-size: 24px;
+  }
+
+  .status-switch-container {
+    align-items: flex-start;
   }
 }
 </style>

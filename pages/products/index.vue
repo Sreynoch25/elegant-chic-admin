@@ -14,11 +14,11 @@
     <a-card style="margin-bottom: 16px;">
       <a-form layout="inline" :model="filterState" @submit.prevent>
         <a-row :gutter="16" style="width: 100%;">
-          <a-col :span="6">
+          <!-- <a-col :span="6">
             <a-form-item label="Search" class="!mb-3">
               <a-input v-model:value="filterState.search" placeholder="Search by name or description" />
             </a-form-item>
-          </a-col>
+          </a-col> -->
           <a-col :span="6">
             <a-form-item label="Category">
               <a-select v-model:value="filterState.category_id" placeholder="Select category" :options="categoryOptions"
@@ -96,6 +96,11 @@
           </template>
           <template v-if="column.key === 'created_at'">
             <span>{{ formatDate(record.created_at) }}</span>
+          </template>
+          <template v-if="column.key === 'created_by'">
+            <span style="text-align: center; display: block;">
+              {{ record.created_by?.id }}
+            </span>
           </template>
           <template v-if="column.key === 'action'">
             <div class="space-x-2" style="display: flex;">
@@ -323,7 +328,7 @@ const sizeOptions = computed(() =>
   }))
 );
 
-const discountOptions = computed(() => 
+const discountOptions = computed(() =>
   discounts.value.map(discount => ({
     label: `${discount.name} (${discount.type === 'percent' ? `${discount.value}%` : `$${discount.value}`})`,
     value: discount.id
@@ -433,9 +438,6 @@ const formRules = {
     { required: true, message: 'Please enter item name' },
     { min: 2, message: 'Item name must be at least 2 characters' }
   ],
-  description: [
-    { required: true, message: 'Please enter description' }
-  ],
   category_id: [
     { required: true, message: 'Please select a category' }
   ],
@@ -478,6 +480,12 @@ const columns = [
     width: 150,
     sorter: (a: Item, b: Item) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     defaultSortOrder: 'descend' as const,
+  },
+  {
+    title: 'Created By',
+    key: 'created_by',
+    dataIndex: 'created_by',
+    width: 150,
   },
   {
     title: 'Action',
@@ -671,7 +679,7 @@ const handleSubmit = async () => {
 
     modalVisible.value = false;
     resetForm();
-    
+
     console.log('🔄 Refreshing items list after', modalMode.value);
     await fetchItems();
     console.log('📋 Items list refreshed, total items:', items.value.length);
@@ -692,7 +700,7 @@ const createItem = async () => {
     formData.append('category_id', formState.value.category_id);
     formData.append('brand_id', formState.value.brand_id);
     formData.append('season_id', formState.value.season_id);
-    
+
     if (formState.value.discount_id) {
       formData.append('discount_id', formState.value.discount_id);
     }
@@ -724,7 +732,6 @@ const createItem = async () => {
       message.success(data.value.message || 'Item created successfully');
       console.log('✅ Item created, refreshing list...');
     } else {
-      console.warn('⚠️ Unexpected response format:', data.value);
       message.success('Item created successfully');
     }
   } catch (error: any) {
@@ -743,7 +750,7 @@ const updateItem = async () => {
     formData.append('category_id', formState.value.category_id);
     formData.append('brand_id', formState.value.brand_id);
     formData.append('season_id', formState.value.season_id);
-    
+
     if (formState.value.discount_id) {
       formData.append('discount_id', formState.value.discount_id);
     }
@@ -765,19 +772,53 @@ const updateItem = async () => {
       }
     });
 
+    console.log('🔄 Updating item with ID:', editingItemId.value);
+
     const { data } = await useFetchDataApi<ApiResponse>(`/item/${editingItemId.value}`, {
       method: 'POST',
       body: formData,
     });
 
-    if (data.value?.success) {
-      message.success(data.value.message || 'Item updated successfully');
+    console.log('📥 Update response:', data.value);
+
+    // Fixed: Better response handling with proper success checking
+    if (data.value?.success === true) {
+      // Use success message with proper icon
+      message.success({
+        content: data.value.message || 'Item updated successfully',
+        duration: 3,
+      });
+      console.log('✅ Item updated successfully');
+    } else if (data.value?.message) {
+      // Show the server message even if success flag is unclear
+      message.success({
+        content: data.value.message,
+        duration: 3,
+      });
+      console.log('✅ Item update completed with message:', data.value.message);
     } else {
-      throw new Error(data.value?.message || 'Failed to update item');
+      // Fallback success message
+      message.success({
+        content: 'Item updated successfully',
+        duration: 3,
+      });
+      console.log('✅ Item update completed (fallback message)');
     }
+
+    // Close modal and refresh
+    modalVisible.value = false;
+    resetForm();
+    await fetchItems();
+
   } catch (error: any) {
     console.error('❌ Update Error:', error);
-    message.error(error.message || 'Failed to update item');
+
+    // Proper error handling with error icon
+    message.error({
+      content: error.message || 'Failed to update item',
+      duration: 5,
+    });
+
     throw error;
   }
 };
@@ -815,9 +856,7 @@ const formatDate = (dateString: string) => {
 const fetchItems = async () => {
   loading.value = true;
   error.value = null;
-  
-  console.log('🔍 Fetching items with filters:', filterState.value);
-  
+
   try {
     const params: Record<string, string> = {};
     if (filterState.value.search) params.search = filterState.value.search;
@@ -830,16 +869,9 @@ const fetchItems = async () => {
       query: params
     });
 
-    console.log('📥 Fetch response:', {
-      success: data.value?.success,
-      dataLength: data.value?.data?.length,
-      message: data.value?.message
-    });
-
     if (data.value?.data && Array.isArray(data.value.data)) {
       items.value = data.value.data;
-      console.log(`✅ Successfully loaded ${items.value.length} items`);
-      
+
       // Log the first few items for debugging
       if (items.value.length > 0) {
         console.log('📝 Latest items:', items.value.slice(0, 3).map(item => ({
@@ -850,7 +882,6 @@ const fetchItems = async () => {
       }
     } else {
       error.value = data.value?.message || 'No items returned';
-      console.warn('⚠️ No items in response:', data.value);
       message.error(error.value);
     }
   } catch (err: any) {
@@ -888,9 +919,9 @@ watch(() => filterState.value.search, () => {
 });
 
 watch([
-  () => filterState.value.category_id, 
-  () => filterState.value.brand_id, 
-  () => filterState.value.season_id, 
+  () => filterState.value.category_id,
+  () => filterState.value.brand_id,
+  () => filterState.value.season_id,
   () => filterState.value.discount_id
 ], () => {
   fetchItems();

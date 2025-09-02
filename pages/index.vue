@@ -41,7 +41,7 @@
           <a-statistic title="Average Order Value" :value="summary.average_order_value" :precision="2" prefix="$"
             :loading="loading">
             <template #prefix>
-              <TrendingUpOutlined />
+              <!-- <TrendingUpOutlined /> -->
             </template>
           </a-statistic>
         </a-card>

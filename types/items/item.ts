@@ -98,6 +98,7 @@ export interface Item {
   brand_id: string;
   discount_id: string | null;
   created_at: string;
+  created_by: string;
   updated_at: string;
   variants: Variant[]; 
   discount?: Discount | null;
@@ -158,6 +159,7 @@ export interface ItemData {
   brand_id: string;
   discount_id: string | null;
   created_at: string;
+  created_by: string;
   updated_at: string;
   variants: Variant[];
   brand: Brand;

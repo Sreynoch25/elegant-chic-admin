@@ -23,9 +23,7 @@ export const useAdminProfileStore = defineStore("adminProfile", {
   },
 
   actions: {
-    hasPermission(permission: string): boolean {
-      console.log("000000000000000000000000000000000000000000000",this.permissions.includes(permission), this.permissions);
-      
+    hasPermission(permission: string): boolean {      
       return this.permissions.includes(permission);
     },
 

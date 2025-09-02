@@ -48,7 +48,6 @@
             <a-select-option value="today">Today</a-select-option>
             <a-select-option value="week">This Week</a-select-option>
             <a-select-option value="month">This Month</a-select-option>
-            <a-select-option value="quarter">This Quarter</a-select-option>
             <a-select-option value="year">This Year</a-select-option>
           </a-select>
         </a-col>
@@ -72,10 +71,10 @@
               <ClearOutlined />
               Clear Filters
             </a-button>
-            <a-button @click="exportCustomers" :loading="exporting">
+            <!-- <a-button @click="exportCustomers" :loading="exporting">
               <DownloadOutlined />
               Export
-            </a-button>
+            </a-button> -->
           </a-space>
         </a-col>
       </a-row>
@@ -412,7 +411,6 @@ const getDateFilterLabel = (filter: string): string => {
     'today': 'Today',
     'week': 'This Week',
     'month': 'This Month',
-    'quarter': 'This Quarter',
     'year': 'This Year'
   }
   return labels[filter] || filter
