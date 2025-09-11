@@ -120,7 +120,7 @@
           </a-col> -->
 
           <!-- Payment Method Filter -->
-          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+          <!-- <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Payment Method" style="margin-bottom: 0;">
               <a-select
                 v-model:value="filters.paymentMethod"
@@ -134,11 +134,11 @@
                 <a-select-option value="bank_transfer">Bank Transfer</a-select-option>
               </a-select>
             </a-form-item>
-          </a-col>
+          </a-col> -->
         </a-row>
 
         <!-- Quick Filters Row -->
-        <a-row :gutter="8" style="margin-top: 16px;">
+        <!-- <a-row :gutter="8" style="margin-top: 16px;">
           <a-col>
             <a-space wrap>
               <a-tag
@@ -185,7 +185,7 @@
               </a-tag>
             </a-space>
           </a-col>
-        </a-row>
+        </a-row> -->
 
         <!-- Action Buttons Row -->
         <a-row :gutter="8" style="margin-top: 16px;" justify="space-between">
@@ -308,9 +308,9 @@
                   <a-menu-item key="view">
                     <EyeOutlined /> View Details
                   </a-menu-item>
-                  <a-menu-item key="edit">
+                  <!-- <a-menu-item key="edit">
                     <EditOutlined /> Edit Order
-                  </a-menu-item>
+                  </a-menu-item> -->
                   <a-menu-divider />
                   <a-menu-item key="accept" v-if="record.order_status === 'pending'">
                     <CheckOutlined /> Accept Order
@@ -440,7 +440,7 @@
       :confirmLoading="exportLoading"
     >
       <a-form layout="vertical">
-        <a-form-item label="Export Format">
+        <a-form-item label="Export Format"> 
           <a-radio-group v-model:value="exportFormat">
             <a-radio value="csv">CSV</a-radio>
             <a-radio value="xlsx">Excel</a-radio>
@@ -703,7 +703,7 @@ const columns: TableColumnsType<Order> = [
   {
     title: "Payment",
     dataIndex: "status",
-    key: "payment_status",
+    key: "status",
     width: 100,
     filters: [
       { text: "Pending", value: "pending" },
@@ -806,7 +806,7 @@ const fetchOrders = async (page = 1, size = pageSize.value) => {
       params.append("order_status", filters.value.status);
     }
     if (filters.value.paymentStatus) {
-      params.append("payment_status", filters.value.paymentStatus);
+      params.append("status", filters.value.paymentStatus);
     }
     if (filters.value.paymentMethod) {
       params.append("payment_method", filters.value.paymentMethod);

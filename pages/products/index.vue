@@ -99,9 +99,10 @@
           </template>
           <template v-if="column.key === 'created_by'">
             <span style="text-align: center; display: block;">
-              {{ record.created_by?.id }}
+              {{ record.created_by?.id ?? 'system' }}
             </span>
           </template>
+
           <template v-if="column.key === 'action'">
             <div class="space-x-2" style="display: flex;">
               <a-button type="primary" size="small" @click="editItem(record)">

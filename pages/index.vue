@@ -51,7 +51,7 @@
           <a-statistic title="Delivery Fees" :value="summary.total_delivery_fees" :precision="2" prefix="$"
             :loading="loading">
             <template #prefix>
-              <TruckOutlined />
+              <!-- <TruckOutlined /> -->
             </template>
           </a-statistic>
         </a-card>

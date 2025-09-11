@@ -10,8 +10,41 @@
           </a-form-item>
 
           <a-form-item name="password" label="Password">
-            <a-input v-model:value="password" type="password" placeholder="Enter your password"
-              autocomplete="current-password" />
+            <a-input 
+              v-model:value="password" 
+              :type="showPassword ? 'text' : 'password'" 
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            >
+              <template #suffix>
+                <button 
+                  type="button"
+                  @click="togglePasswordVisibility"
+                  class="password-toggle-btn"
+                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                >
+                  <svg 
+                    v-if="showPassword" 
+                    class="password-icon" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L12 12m-3.122-3.122l4.243-4.243M21 21l-6.879-6.879" />
+                  </svg>
+                  <svg 
+                    v-else 
+                    class="password-icon" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </template>
+            </a-input>
           </a-form-item>
 
           <a-form-item>
@@ -66,6 +99,7 @@ const router = useRouter();
 
 const isLoading = ref(false);
 const errors = ref<Partial<Error>>({});
+const showPassword = ref(false); // Add password visibility state
 
 // Bind login form inputs
 const email = ref('');
@@ -86,6 +120,12 @@ watchEffect(() => {
   loginStore.user.email = email.value;
   loginStore.user.password = password.value;
 });
+
+// Password visibility toggle
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value;
+  console.log('Password visibility toggled:', showPassword.value);
+};
 
 // Snackbar methods
 const showSnackbar = (message: string, type: 'success' | 'error' | 'info' | 'loading' = 'info', duration: number = 4000) => {
@@ -122,7 +162,6 @@ const validateForm = () => {
   console.log('Validating form...');
   // Email validation
   if (!email.value.trim()) {
-    console.log('Validation failed: Email is required');
     showSnackbar("Email is required", 'error');
     return false;
   }
@@ -130,19 +169,16 @@ const validateForm = () => {
   // Simple email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.value)) {
-    console.log('Validation failed: Invalid email format', email.value);
     showSnackbar("Please enter a valid email address", 'error');
     return false;
   }
   
   // Password validation
   if (!password.value.trim()) {
-    console.log('Validation failed: Password is required');
     showSnackbar("Password is required", 'error');
     return false;
   }
   
-  console.log('Form validation passed');
   return true;
 };
 
@@ -170,9 +206,7 @@ const login = async (e: Event) => {
   showSnackbar("Logging in...", 'loading', 0);
 
   try {
-    console.log('Calling loginStore.fetchLogin()...');
     const response = await loginStore.fetchLogin();
-    console.log('Login response received:', response);
 
     if (response && response.data) {
       console.log('Login successful:', response.data);
@@ -188,7 +222,6 @@ const login = async (e: Event) => {
 
     } else {
       // Failed response
-      console.log('Login failed: No valid response data', response);
       closeSnackbar();
       showSnackbar("Invalid email or password. Please try again.", 'error');
     }
@@ -219,24 +252,50 @@ const login = async (e: Event) => {
     showSnackbar(errorMessage, 'error', 4000);
 
   } finally {
-    console.log('Login process completed, setting isLoading to false');
     isLoading.value = false;
   }
 };
 
 // Clear snackbar when component unmounts
 onUnmounted(() => {
-  console.log('Login component unmounted');
   if (snackbarTimeout) {
     clearTimeout(snackbarTimeout);
   }
 });
 
-// Log component initialization
-console.log('Login component initialized');
 </script>
 
 <style scoped lang="css">
+.password-toggle-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #333;
+}
+
+.password-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Dark mode support */
+.dark .password-toggle-btn {
+  color: #999;
+}
+
+.dark .password-toggle-btn:hover {
+  color: #ccc;
+}
+
 .login-container {
   min-height: 100vh;
   display: flex;
