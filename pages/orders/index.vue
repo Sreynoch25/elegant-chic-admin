@@ -170,9 +170,6 @@
                   <a-menu-item key="view">
                     <EyeOutlined /> View Details
                   </a-menu-item>
-                  <a-menu-item key="edit">
-                    <EditOutlined /> Edit Order
-                  </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="accept" v-if="record.order_status === 'pending'">
                     <CheckOutlined /> Accept Order
@@ -824,8 +821,6 @@ const handleAction = async (action: string, order: Order) => {
       viewOrderDetails(order);
       break;
     case "edit":
-      // Navigate to edit page or open edit modal
-      console.log("Edit order:", order.id);
       break;
     case "accept":
       await updateOrderStatus(order.id, "accepted");
