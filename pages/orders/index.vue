@@ -11,14 +11,14 @@
           </a-button>
         </div>
       </template>
-    </a-page-header>z
+    </a-page-header>
 
     <!-- Enhanced Filter Section -->
     <a-card class="filter-card" style="margin-bottom: 16px;">
       <a-form layout="vertical">
         <a-row :gutter="16">
           <!-- Search Input -->
-          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+          <!-- <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Search" style="margin-bottom: 0;">
               <a-input v-model:value="filters.search" placeholder="Order #, Customer name, Email" allow-clear
                 @pressEnter="handleSearch" @input="debouncedSearch">
@@ -27,7 +27,7 @@
                 </template>
               </a-input>
             </a-form-item>
-          </a-col>
+          </a-col> -->
 
           <!-- Order Status Filter -->
           <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
@@ -73,12 +73,18 @@
             </a-form-item>
           </a-col>
 
-        </a-row>
 
-
-        <!-- Action Buttons Row -->
-        <a-row :gutter="8" style="margin-top: 16px;" justify="space-between">
-          <a-col>
+          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
+            <a-form-item label="clearFilters" style="margin-bottom: 0;">
+              <a-button @click="clearFilters">
+                <template #icon>
+                  <ClearOutlined />
+                </template>
+                Clear
+              </a-button>
+            </a-form-item>
+          </a-col>
+          <!-- <a-col>
             <a-space>
               <a-button @click="clearFilters">
                 <template #icon>
@@ -87,7 +93,23 @@
                 Clear
               </a-button>
             </a-space>
-          </a-col>
+          </a-col> -->
+
+        </a-row>
+
+
+        <!-- Action Buttons Row -->
+        <a-row :gutter="8" style="margin-top: 16px;" justify="space-between">
+          <!-- <a-col>
+            <a-space>
+              <a-button @click="clearFilters">
+                <template #icon>
+                  <ClearOutlined />
+                </template>
+                Clear
+              </a-button>
+            </a-space>
+          </a-col> -->
           <a-col>
             <a-space>
               <!-- Filter Summary -->
@@ -520,18 +542,22 @@ const columns: TableColumnsType<Order> = [
     key: "order_number",
     width: 120,
     fixed: "left",
+    sorter: false,
   },
   {
     title: "Customer",
     dataIndex: "customer",
     key: "customer",
     width: 200,
+    sorter: false,
   },
   {
     title: "Status",
     dataIndex: "order_status",
     key: "order_status", // Changed key to match dataIndex for clarity in handling filters
     width: 120,
+    sorter: false,
+    filterMultiple: false,
     filters: [
       { text: "Pending", value: "pending" },
       { text: "Accepted", value: "accepted" },
@@ -546,6 +572,8 @@ const columns: TableColumnsType<Order> = [
     dataIndex: "status",
     key: "status",
     width: 100,
+    sorter: false,
+    filterMultiple: false,
     filters: [
       { text: "Pending", value: "pending" },
       { text: "Completed", value: "completed" },
@@ -557,26 +585,28 @@ const columns: TableColumnsType<Order> = [
     dataIndex: "total_amount",
     key: "total_amount",
     width: 100,
-    sorter: true,
+    sorter: false,
   },
   {
     title: "Items",
     dataIndex: "order_items",
     key: "items",
     width: 80,
+    sorter: false,
   },
   {
     title: "Date",
     dataIndex: "placed_at",
     key: "placed_at",
     width: 120,
-    sorter: true,
+    sorter: false,
   },
   {
     title: "Actions",
     key: "actions",
     width: 80,
     fixed: "right",
+    sorter: false,
   },
 ];
 

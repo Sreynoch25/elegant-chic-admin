@@ -79,6 +79,14 @@
                 <template v-if="column.key === 'price'">
                   ${{ variant.final_price }}
                 </template>
+                <template v-if="column.key === 'action'">
+                  <a-popconfirm title="Are you sure you want to delete this variant?" ok-text="Yes" cancel-text="No"
+                    @confirm="deleteVariant(variant.id, record.id)">
+                    <a-button size="small" danger>
+                      Delete
+                    </a-button>
+                  </a-popconfirm>
+                </template>
               </template>
             </a-table>
           </div>
@@ -273,7 +281,7 @@ const formState = ref<ItemFormState>({
   category_id: '',
   brand_id: '',
   season_id: '',
-  discount_id: '', // Added discount_id to form state
+  discount_id: '',
   variants: [{
     id: '',
     color_id: '',
@@ -523,6 +531,11 @@ const variantColumns = [
     key: 'quantity',
     width: 100,
   },
+  {
+    title: 'Action',
+    key: 'action',
+    width: 100,
+  },
 ];
 
 // File upload handling
@@ -636,7 +649,7 @@ const editItem = (record: Record<string, any>) => {
     category_id: item.category_id,
     brand_id: item.brand_id,
     season_id: item.season_id,
-    discount_id: item.discount_id || '', // Added discount_id
+    discount_id: item.discount_id || '',
     variants: mappedVariants(item)
   };
 };
@@ -782,23 +795,19 @@ const updateItem = async () => {
 
     console.log('📥 Update response:', data.value);
 
-    // Fixed: Better response handling with proper success checking
     if (data.value?.success === true) {
-      // Use success message with proper icon
       message.success({
         content: data.value.message || 'Item updated successfully',
         duration: 3,
       });
       console.log('✅ Item updated successfully');
     } else if (data.value?.message) {
-      // Show the server message even if success flag is unclear
       message.success({
         content: data.value.message,
         duration: 3,
       });
       console.log('✅ Item update completed with message:', data.value.message);
     } else {
-      // Fallback success message
       message.success({
         content: 'Item updated successfully',
         duration: 3,
@@ -806,7 +815,6 @@ const updateItem = async () => {
       console.log('✅ Item update completed (fallback message)');
     }
 
-    // Close modal and refresh
     modalVisible.value = false;
     resetForm();
     await fetchItems();
@@ -814,7 +822,6 @@ const updateItem = async () => {
   } catch (error: any) {
     console.error('❌ Update Error:', error);
 
-    // Proper error handling with error icon
     message.error({
       content: error.message || 'Failed to update item',
       duration: 5,
@@ -839,6 +846,26 @@ const deleteItem = async (itemId: string) => {
   } catch (error: any) {
     console.error('❌ Delete Error:', error);
     message.error(error.message || 'Failed to delete item');
+  }
+};
+
+const deleteVariant = async (variantId: string, itemId: string) => {
+  try {
+    const { data } = await useFetchDataApi<ApiResponse>(`/item-variants/${variantId}`, {
+      method: 'DELETE'
+    });
+
+    if (data.value?.message) {
+      message.success(data.value.message);
+    } else {
+      message.success('Item variant deleted successfully');
+    }
+
+    // Refresh items list to reflect the deleted variant
+    await fetchItems();
+  } catch (error: any) {
+    console.error('❌ Delete Variant Error:', error);
+    message.error(error.message || 'Failed to delete variant');
   }
 };
 
@@ -873,7 +900,6 @@ const fetchItems = async () => {
     if (data.value?.data && Array.isArray(data.value.data)) {
       items.value = data.value.data;
 
-      // Log the first few items for debugging
       if (items.value.length > 0) {
         console.log('📝 Latest items:', items.value.slice(0, 3).map(item => ({
           id: item.id,
@@ -941,26 +967,6 @@ onMounted(async () => {
   ]);
 });
 </script>
-
-<style scoped lang="css">
-.space-x-2>*+* {
-  margin-left: 0.5rem;
-}
-
-.variant-form {
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 16px;
-  background-color: #fafafa;
-}
-
-.modal-footer {
-  border-top: 1px solid #f0f0f0;
-  padding-top: 16px;
-}
-</style>
-
 
 <style scoped>
 .space-x-2>*+* {

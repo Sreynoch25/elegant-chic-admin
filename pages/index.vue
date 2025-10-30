@@ -373,13 +373,14 @@ const MOCK_DASHBOARD_DATA: DashboardResponse = {
 
   // **UPDATED Sales Data Structures with Accessories**
   "sales_overview_7d": [
-    { "period_label": "24 Oct", "dresses_skirts": 500, "tops_blouses": 300, "footwear": 150, "accessories": 50 },
+    // { "period_label": "24 Oct", "dresses_skirts": 500, "tops_blouses": 300, "footwear": 150, "accessories": 50 },
     { "period_label": "25 Oct", "dresses_skirts": 620, "tops_blouses": 350, "footwear": 200, "accessories": 60 },
     { "period_label": "26 Oct", "dresses_skirts": 710, "tops_blouses": 420, "footwear": 250, "accessories": 75 },
     { "period_label": "27 Oct", "dresses_skirts": 450, "tops_blouses": 280, "footwear": 180, "accessories": 40 },
     { "period_label": "28 Oct", "dresses_skirts": 800, "tops_blouses": 510, "footwear": 320, "accessories": 90 },
     { "period_label": "29 Oct", "dresses_skirts": 950, "tops_blouses": 600, "footwear": 400, "accessories": 110 },
-    { "period_label": "30 Oct", "dresses_skirts": 1100, "tops_blouses": 700, "footwear": 450, "accessories": 130 }
+    { "period_label": "30 Oct", "dresses_skirts": 1100, "tops_blouses": 700, "footwear": 450, "accessories": 130 },
+    { "period_label": "31 Oct", "dresses_skirts": 500, "tops_blouses": 300, "footwear": 150, "accessories": 50 },
   ],
 
   "sales_overview_1m": [
@@ -553,7 +554,8 @@ watch(() => dashboardData.value.sales_overview_1m, () => {
   }
 }, { deep: true, immediate: true }) // immediate: true ensures it runs on initial load
 
-</script><style scoped>
+</script>
+<style scoped>
 .dashboard-container {
   padding: 24px;
   background: #f5f7fa;

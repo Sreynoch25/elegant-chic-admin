@@ -74,19 +74,7 @@
         </a-col>
       </a-row>
 
-      <a-row :gutter="16">
-        <a-col :xs="24" :sm="12" :md="8">
-          <a-form-item label="Sort By">
-            <a-select v-model:value="sortBy" @change="handleSortChange">
-              <a-select-option value="placed_at">Date</a-select-option>
-              <a-select-option value="order_number">Order Number</a-select-option>
-              <a-select-option value="total">Price</a-select-option>
-              <a-select-option value="quantity">Quantity</a-select-option>
-              <a-select-option value="full_item_name">Item Name</a-select-option>
-            </a-select>
-          </a-form-item>
-        </a-col>
-      </a-row>
+
 
       <a-row>
         <a-col :span="24">
