@@ -37,12 +37,12 @@
                 allowClear />
             </a-form-item>
           </a-col>
-          <a-col :span="6">
+          <!-- <a-col :span="6">
             <a-form-item label="Discount">
               <a-select v-model:value="filterState.discount_id" placeholder="Select discount" :options="discountOptions"
                 allowClear />
             </a-form-item>
-          </a-col>
+          </a-col> -->
           <a-col :span="24" style="margin-top: 16px; text-align: right;">
             <a-button type="primary" @click="applyFilters" :loading="loading">
               Apply Filters

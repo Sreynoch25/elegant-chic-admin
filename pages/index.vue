@@ -1,1311 +1,812 @@
 <template>
-  <div class="sales-dashboard">
-    <!-- Page Header -->
-    <div class="page-header">
-      <a-page-header title="Sales Dashboard" sub-title="Track your sales performance and analytics">
-        <template #extra>
-          <a-range-picker v-model:value="dateRange" @change="onDateRangeChange" format="YYYY-MM-DD" />
-          <a-button type="primary" :loading="refreshing" @click="refreshData">
-            <template #icon>
-              <ReloadOutlined />
-            </template>
-            Refresh
-          </a-button>
-        </template>
-      </a-page-header>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Fashion Store Dashboard</h1>
+      <p class="dashboard-subtitle">Welcome back, here's your fashion store performance today.</p>
     </div>
 
-    <!-- Summary Cards -->
-    <a-row :gutter="[16, 16]" class="summary-cards">
-      <a-col :xs="24" :sm="12" :md="6">
-        <a-card>
-          <a-statistic title="Total Orders" :value="summary.total_orders" :loading="loading">
-            <template #prefix>
-              <ShoppingCartOutlined />
-            </template>
-          </a-statistic>
-        </a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :md="6">
-        <a-card>
-          <a-statistic title="Total Revenue" :value="summary.total_revenue" :precision="2" prefix="$"
-            :loading="loading">
-            <template #prefix>
-              <DollarOutlined />
-            </template>
-          </a-statistic>
-        </a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :md="6">
-        <a-card>
-          <a-statistic title="Average Order Value" :value="summary.average_order_value" :precision="2" prefix="$"
-            :loading="loading">
-            <template #prefix>
-              <!-- <TrendingUpOutlined /> -->
-            </template>
-          </a-statistic>
-        </a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :md="6">
-        <a-card>
-          <a-statistic title="Delivery Fees" :value="summary.total_delivery_fees" :precision="2" prefix="$"
-            :loading="loading">
-            <template #prefix>
-              <!-- <TruckOutlined /> -->
-            </template>
-          </a-statistic>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <!-- Charts Section -->
-    <a-row :gutter="[16, 16]" class="charts-section">
-      <a-col :xs="24" :lg="16">
-        <a-card title="Sales by Period" :loading="loading">
-          <div class="chart-container" style="height: 300px;">
-            <FashionSalesChart :period="currentPeriod" :sales-overview="salesOverview" :kpis="kpis" />
-          </div>
-        </a-card>
-      </a-col>
-      <a-col :xs="24" :lg="8">
-        <a-card title="Order Status" :loading="loading">
-          <div class="status-chart-container" style="height: 300px;">
-            <canvas ref="statusChartCanvas" class="w-full h-full"></canvas>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <div class="data-sections">
-      <!-- Top Selling Items with Modern Card Grid Style -->
-      <div class="modern-section">
-        <div class="section-header">
-          <h3 class="section-title">
-            <span class="title-icon">🏆</span>
-            Top Selling Items
-          </h3>
-          <div class="section-stats">
-            <span class="stat-badge">{{ topSellingItems.length }} Items</span>
-          </div>
-        </div>
-
-        <div class="top-items-grid" :class="{ 'loading': loading }">
-          <div v-for="(item, index) in topSellingItems" :key="`${item.item_name}-${item.size}-${item.color}`"
-            class="top-item-card" :style="{ animationDelay: `${index * 0.1}s` }">
-            <div class="item-rank">{{ index + 1 }}</div>
-            <div class="item-header">
-              <div class="item-title">{{ item.full_item_name }}</div>
-              <div class="item-attributes">
-                <span class="color-badge" :style="getColorStyle(item.color)">{{ item.color }}</span>
-                <span class="size-badge">{{ item.size }}</span>
+    <a-spin :spinning="loading" size="large">
+      <!-- KPI Cards -->
+      <a-row :gutter="[16, 16]" class="kpi-section">
+        <a-col :xs="24" :sm="12" :lg="6">
+          <a-card class="kpi-card" :class="`kpi-${dashboardData.kpis?.total_revenue?.color}`">
+            <div class="kpi-content">
+              <div class="kpi-icon">
+                <component :is="getIcon(dashboardData.kpis?.total_revenue?.icon)" />
+              </div>
+              <div class="kpi-details">
+                <div class="kpi-label">{{ dashboardData.kpis?.total_revenue?.label }}</div>
+                <div class="kpi-value">${{ dashboardData.kpis?.total_revenue?.value }}</div>
+                <!-- <div class="kpi-change" :class="`trend-${dashboardData.kpis?.total_revenue?.trend}`">
+                  <component :is="getTrendIcon(dashboardData.kpis?.total_revenue?.trend)" />
+                  {{ Math.abs(dashboardData.kpis?.total_revenue?.change) }}% last month
+                </div> -->
               </div>
             </div>
-            <div class="item-metrics">
-              <div class="metric">
-                <div class="metric-value">${{ parseFloat(item.total_revenue).toLocaleString() }}</div>
-                <div class="metric-label">Total Revenue</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value">{{ item.total_quantity_sold }}</div>
-                <div class="metric-label">Sold</div>
-              </div>
-              <div class="metric">
-                <div class="metric-value">${{ parseFloat(item.average_price).toFixed(2) }}</div>
-                <div class="metric-label">Avg Price</div>
-              </div>
-            </div>
-            <div class="item-footer">
-              <div class="orders-count">{{ item.total_orders }} orders</div>
-              <div class="trend-indicator positive">↗ +12%</div>
-            </div>
-          </div>
-        </div>
+          </a-card>
+        </a-col>
 
-      </div>
-              <!-- Quick Actions -->
-        <div class="!mt-3">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Fashion Actions</h3>
-          <a-row :gutter="[16, 16]">
-            <a-col :xs="12" :sm="8" :md="6" v-for="action in quickActions" :key="action.key">
-              <NuxtLink :to="action.link">
-                <a-card :bordered="false" hoverable class="text-center quick-action-card">
-                  <div class="action-icon !mb-3" :style="{ color: action.color }">
-                    <component :is="action.icon" class="text-2xl" />
-                  </div>
-                  <p class="text-sm font-medium text-gray-800">{{ action.title }}</p>
-                </a-card>
-              </NuxtLink>
-            </a-col>
-          </a-row>
-        </div>
-    </div>
+        <a-col :xs="24" :sm="12" :lg="6">
+          <a-card class="kpi-card" :class="`kpi-${dashboardData.kpis?.fashion_orders?.color}`">
+            <div class="kpi-content">
+              <div class="kpi-icon">
+                <component :is="getIcon(dashboardData.kpis?.fashion_orders?.icon)" />
+              </div>
+              <div class="kpi-details">
+                <div class="kpi-label">{{ dashboardData.kpis?.fashion_orders?.label }}</div>
+                <div class="kpi-value">{{ dashboardData.kpis?.fashion_orders?.value }}</div>
+                <!-- <div class="kpi-change" :class="`trend-${dashboardData.kpis?.fashion_orders?.trend}`">
+                  <component :is="getTrendIcon(dashboardData.kpis?.fashion_orders?.trend)" />
+                  {{ Math.abs(dashboardData.kpis?.fashion_orders?.change) }}% last month
+                </div> -->
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :lg="6">
+          <a-card class="kpi-card" :class="`kpi-${dashboardData.kpis?.style_enthusiasts?.color}`">
+            <div class="kpi-content">
+              <div class="kpi-icon">
+                <component :is="getIcon(dashboardData.kpis?.style_enthusiasts?.icon)" />
+              </div>
+              <div class="kpi-details">
+                <div class="kpi-label">{{ dashboardData.kpis?.style_enthusiasts?.label }}</div>
+                <div class="kpi-value">{{ dashboardData.kpis?.style_enthusiasts?.value }}</div>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :lg="6">
+          <a-card class="kpi-card" :class="`kpi-${dashboardData.kpis?.fashion_items?.color}`">
+            <div class="kpi-content">
+              <div class="kpi-icon">
+                <component :is="getIcon(dashboardData.kpis?.fashion_items?.icon)" />
+              </div>
+              <div class="kpi-details">
+                <div class="kpi-label">{{ dashboardData.kpis?.fashion_items?.label }}</div>
+                <div class="kpi-value">{{ dashboardData.kpis?.fashion_items?.value }}</div>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+      </a-row>
+
+      <!-- Sales Overview -->
+      <a-row :gutter="[16, 16]" class="charts-section">
+        <a-col :xs="24" :lg="16">
+          <a-card title="Sales Overview" class="chart-card">
+            <template #extra>
+              <a-radio-group v-model:value="chartView" button-style="solid" size="small">
+                <a-radio-button value="7d">7D</a-radio-button>
+                <a-radio-button value="1m">1M</a-radio-button>
+                <a-radio-button value="1y">1Y</a-radio-button>
+              </a-radio-group>
+            </template>
+            <div class="chart-container">
+              <canvas ref="salesChart"></canvas>
+            </div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :lg="8">
+          <a-card title="Top Fashion Categories" class="chart-card">
+            <!-- <template #extra>
+              <a-button type="link" size="small">View All</a-button>
+            </template> -->
+            <div class="categories-list">
+              <div v-for="cat in dashboardData.top_categories" :key="cat.id" class="category-item">
+                <div class="category-info flex justify-between items-center">
+                  <div class="category-name">{{ cat.name }}</div>
+                  <div class="category-revenue">${{ formatNumber(cat.revenue) }}</div>
+                </div>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+      </a-row>
+
+      <!-- Recent Orders and Low Stock -->
+      <a-row :gutter="[16, 16]" class="tables-section">
+        <a-col :xs="24" :lg="12">
+          <a-card title="Recent Fashion Orders" class="table-card">
+            <template #extra>
+              <router-link to="/orders">
+                <a-button type="link" size="small">View All</a-button>
+              </router-link>
+            </template>
+            <div class="orders-list">
+              <div v-for="order in dashboardData.recent_orders?.slice(0, 4)" :key="order.id" class="order-item">
+                <div class="order-avatar">
+                  <UserOutlined />
+                </div>
+                <div class="order-info">
+                  <div class="order-customer">{{ order.customer_name }}</div>
+                  <div class="order-details">{{ order.order_number }}</div>
+                </div>
+                <div class="order-amount">${{ order.amount }}</div>
+                <a-tag :color="order.status_color">{{ order.status_label }}</a-tag>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :lg="12">
+          <a-card title="Low Stock Fashion Items" class="table-card">
+            <div class="stock-list">
+              <div v-for="item in dashboardData.low_stock_items?.slice(0, 4)" :key="item.id" class="stock-item">
+                <div class="stock-avatar">
+                  <TagOutlined />
+                </div>
+                <div class="stock-info">
+                  <div class="stock-name">{{ item.item_name }}</div>
+                  <div class="stock-variant">One Size - {{ item.color }}</div>
+                </div>
+                <div class="stock-quantity">
+                  <span class="quantity-badge">{{ item.quantity }} left</span>
+                  <div class="stock-date">Mon, 15</div>
+                </div>
+              </div>
+            </div>
+          </a-card>
+        </a-col>
+      </a-row>
+
+      <!-- Quick Actions -->
+      <!-- <a-row :gutter="[16, 16]" class="actions-section">
+        <a-col :xs="24">
+          <a-card title="Quick Fashion Actions" class="actions-card">
+            <a-row :gutter="[16, 16]">
+              <a-col :xs="12" :sm="6">
+                <div class="action-item">
+                  <PlusOutlined class="action-icon" />
+                  <div class="action-label">Add Fashion Item</div>
+                </div>
+              </a-col>
+              <a-col :xs="12" :sm="6">
+                <div class="action-item">
+                  <EyeOutlined class="action-icon" />
+                  <div class="action-label">View Orders</div>
+                </div>
+              </a-col>
+              <a-col :xs="12" :sm="6">
+                <div class="action-item">
+                  <HeartOutlined class="action-icon" />
+                  <div class="action-label">Collections</div>
+                </div>
+              </a-col>
+              <a-col :xs="12" :sm="6">
+                <div class="action-item">
+                  <BookOutlined class="action-icon" />
+                  <div class="action-label">Lookbook</div>
+                </div>
+              </a-col>
+            </a-row>
+          </a-card>
+        </a-col>
+      </a-row> -->
+    </a-spin>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, defineComponent, h, watch, type PropType } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import Chart from 'chart.js/auto'
-import type { Dayjs } from 'dayjs'
 import {
-    ShoppingCartOutlined,
-    EyeOutlined,
-    FileTextOutlined,
-    GiftOutlined,
+  DollarOutlined,
+  ShoppingOutlined,
+  UserOutlined,
+  TagOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  MinusOutlined,
+  PlusOutlined,
+  EyeOutlined,
+  HeartOutlined,
+  BookOutlined
 } from '@ant-design/icons-vue'
-// Types
+
+// --- 1. INTERFACES ---
+interface KPI {
+  value: string
+  label: string
+  change: number
+  trend: string
+  icon: string
+  color: string
+}
+
+interface SalesData {
+  period_label: string // e.g., 'Oct 23', 'Day 10', 'Jan'
+  dresses_skirts: number // Corresponds to 'Dresses & Skirts'
+  tops_blouses: number // Corresponds to 'Tops & Blouses'
+  footwear: number // Corresponds to 'Footwear'
+  accessories: number // 🎉 NEW: Corresponds to 'Accessories'
+}
+
 interface Order {
+  id: string
   order_number: string
-  placed_at: string
-  item_name: string
-  size: string
-  color: string
-  full_item_name: string
-  color_name: string
-  size_name: string
-  quantity: number
-  final_price: string
-  total_price: string
-  customer_id: string
-}
-
-interface TopSellingItem {
-  item_name: string
-  size: string
-  color: string
-  full_item_name: string
-  total_quantity_sold: string
-  total_revenue: string
-  average_price: string
-  total_orders: number
-}
-
-interface SalesPeriod {
-  period: string
-  orders_count: number
-  revenue: string
-  week?: string
-  dresses?: number
-  tops__blouses?: number
-  shoes?: number
-}
-
-interface StatusBreakdown {
+  customer_name: string
+  amount: string
   status: string
-  count: number
+  status_label: string
+  status_color: string
+}
+
+interface StockItem {
+  id: string
+  item_name: string
+  color: string
+  size: string
+  quantity: number
+  price: string
+}
+
+interface Category {
+  id: string
+  name: string
   revenue: string
+  orders: number
 }
 
-interface Summary {
-  total_orders: number
-  total_revenue: string
-  average_order_value: string
-  total_delivery_fees: string
+interface DashboardResponse {
+  kpis: {
+    total_revenue: KPI
+    fashion_orders: KPI
+    style_enthusiasts: KPI
+    fashion_items: KPI
+  }
+  sales_overview_7d: SalesData[] // Weekly data (7 days back)
+  sales_overview_1m: SalesData[] // Monthly data (Day 1 to Current Day)
+  sales_overview_1y: SalesData[] // Yearly data (Month 1 to Current Month)
+  recent_orders: Order[]
+  low_stock_items: StockItem[]
+  top_categories: Category[]
+  last_updated: string
 }
 
-interface SalesOverview {
-  period?: string
-  week?: string
-  dresses?: number
-  tops__blouses?: number
-  shoes?: number
-}
+// --- 2. STATE (REFS) ---
+const loading = ref(false)
+const error = ref<string | null>(null)
+const chartView = ref('1m') // Default view set to Monthly (1M)
+const salesChart = ref<HTMLCanvasElement | null>(null)
+let chartInstance: Chart | null = null
 
-definePageMeta({
-  layout: "default"
+// Initial structure for dashboard data
+const dashboardData = ref<DashboardResponse>({
+  kpis: {} as any,
+  sales_overview_7d: [],
+  sales_overview_1m: [],
+  sales_overview_1y: [],
+  recent_orders: [],
+  low_stock_items: [],
+  top_categories: [],
+  last_updated: ''
 })
 
-const quickActions = computed(() => [
-    {
-        key: 'view-orders',
-        title: 'View Orders',
-        icon: EyeOutlined,
-        color: '#8b5cf6',
-        link: '/orders'
-    },
-    {
-        key: 'reports',
-        title: 'Reports',
-        icon: FileTextOutlined,
-        color: '#f59e0b',
-        link: '/reports/inventory'
-    },
-    {
-        key: 'promotions',
-        title: 'Promotions',
-        icon: GiftOutlined,
-        color: '#10b981',
-        link: '/promotions/discounts'
-    },
-])
-// Fashion Sales Chart Component
-const FashionSalesChart = defineComponent({
-  props: {
-    period: String,
-    salesOverview: Array as PropType<SalesOverview[]>,
-    kpis: Object
-  },
-  setup(props) {
-    const chartCanvas = ref<HTMLCanvasElement | null>(null)
-    let chartInstance: Chart | null = null
+// --- 3. COMPUTED & HELPER FUNCTIONS ---
 
-    // Fashion-themed color palette
-    const fashionColors = {
-      dresses: '#ec4899', // pink
-      tops: '#8b5cf6', // purple
-      shoes: '#06b6d4', // cyan
-      gradients: {
-        dresses: 'rgba(236, 72, 153, 0.1)',
-        tops: 'rgba(139, 92, 246, 0.1)',
-        shoes: 'rgba(6, 182, 212, 0.1)'
-      }
-    }
-
-    // Transform API data to Chart.js format
-    const generateChartData = () => {
-      if (!props.salesOverview?.length) return {
-        labels: [],
-        datasets: []
-      }
-
-      const labels = props.salesOverview.map(item => item.week || item.period || 'N/A')
-      const dressesData = props.salesOverview.map(item => item.dresses || 0)
-      const topsData = props.salesOverview.map(item => item.tops__blouses || 0)
-      const shoesData = props.salesOverview.map(item => item.shoes || 0)
-
-      return {
-        labels,
-        datasets: [
-          {
-            label: 'Dresses',
-            data: dressesData,
-            borderColor: fashionColors.dresses,
-            backgroundColor: fashionColors.gradients.dresses,
-            fill: true,
-            tension: 0.4
-          },
-          {
-            label: 'Tops & Blouses',
-            data: topsData,
-            borderColor: fashionColors.tops,
-            backgroundColor: fashionColors.gradients.tops,
-            fill: true,
-            tension: 0.4
-          },
-          {
-            label: 'Shoes',
-            data: shoesData,
-            borderColor: fashionColors.shoes,
-            backgroundColor: fashionColors.gradients.shoes,
-            fill: true,
-            tension: 0.4
-          }
-        ]
-      }
-    }
-
-    // Create chart
-    const initChart = () => {
-      if (chartInstance) chartInstance.destroy()
-
-      const chartData = generateChartData()
-
-      if (chartCanvas.value) {
-        chartInstance = new Chart(chartCanvas.value, {
-          type: 'line',
-          data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'top' },
-              tooltip: {
-                callbacks: {
-                  label: function (context) {
-                    return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
-                  }
-                }
-              }
-            },
-            scales: {
-              y: {
-                ticks: {
-                  callback: (value) => '$' + value
-                }
-              }
-            }
-          }
-        })
-      }
-    }
-
-    watch(() => [props.salesOverview, props.period], () => {
-      nextTick(() => initChart())
-    })
-
-    onMounted(() => {
-      nextTick(() => initChart())
-    })
-
-    onUnmounted(() => {
-      if (chartInstance) chartInstance.destroy()
-    })
-
-    return () => h('div', { class: 'fashion-sales-chart' }, [
-      h('canvas', {
-        ref: chartCanvas,
-        class: 'w-full h-full',
-        style: 'border-radius: 8px;'
-      })
-    ])
+// **Computed property to select the chart data based on the filter**
+const currentSalesData = computed(() => {
+  switch (chartView.value) {
+    case '7d':
+      return dashboardData.value.sales_overview_7d
+    case '1m':
+      return dashboardData.value.sales_overview_1m
+    case '1y':
+      return dashboardData.value.sales_overview_1y
+    default:
+      return dashboardData.value.sales_overview_1m // Fallback
   }
 })
 
-// Reactive data
-const loading = ref(true)
-const refreshing = ref(false)
-const dateRange = ref<[Dayjs, Dayjs] | undefined>(undefined)
-const searchText = ref('')
-const currentPeriod = ref('weekly')
-const viewMode = ref<'timeline' | 'table'>('timeline')
+// Function to calculate KPI totals for the current range
+const kpiAggregator = (data: SalesData[]) => {
+  let totalRevenue = 0;
+  let totalOrders = 0;
 
-// Initialize with empty data to prevent errors
-const orders = ref<Order[]>([])
-const topSellingItems = ref<TopSellingItem[]>([])
-const salesByPeriod = ref<SalesPeriod[]>([])
-const statusBreakdown = ref<StatusBreakdown[]>([])
-const summary = ref<Summary>({
-  total_orders: 0,
-  total_revenue: "0.00",
-  average_order_value: "0.00",
-  total_delivery_fees: "0.00"
-})
+  data.forEach(item => {
+    // Summing up all four category revenues
+    totalRevenue += item.dresses_skirts + item.tops_blouses + item.footwear + item.accessories;
+    // Mocking orders based on a simple ratio of revenue (e.g., 1 order per $50 revenue)
+    totalOrders += Math.floor((item.dresses_skirts + item.tops_blouses + item.footwear + item.accessories) / 50);
+  });
 
-// Chart refs
-const statusChartCanvas = ref<HTMLCanvasElement>()
-let statusChartInstance: Chart | null = null
-
-// Transform sales data for the fashion chart
-const salesOverview = computed((): SalesOverview[] => {
-  return salesByPeriod.value.map(item => ({
-    period: item.period,
-    week: item.period,
-    dresses: Math.floor(parseFloat(item.revenue) * 0.4), // Mock data transformation
-    tops__blouses: Math.floor(parseFloat(item.revenue) * 0.35),
-    shoes: Math.floor(parseFloat(item.revenue) * 0.25)
-  }))
-})
-
-const kpis = computed(() => ({
-  totalRevenue: summary.value.total_revenue,
-  totalOrders: summary.value.total_orders,
-  avgOrderValue: summary.value.average_order_value
-}))
-
-// Table configurations
-const ordersColumns = [
-  {
-    title: 'Order Number',
-    key: 'order_number',
-    width: 180,
-  },
-  {
-    title: 'Item',
-    key: 'item',
-    width: 250,
-  },
-  {
-    title: 'Quantity',
-    dataIndex: 'quantity',
-    key: 'quantity',
-    align: 'center' as const,
-    width: 80,
-  },
-  {
-    title: 'Price',
-    key: 'final_price',
-    align: 'right' as const,
-    width: 100,
-  },
-  {
-    title: 'Date',
-    key: 'placed_at',
-    width: 150,
-  },
-]
-
-// Computed
-const filteredOrders = computed(() => {
-  if (!searchText.value) return orders.value
-  return orders.value.filter(order =>
-    order.order_number.toLowerCase().includes(searchText.value.toLowerCase()) ||
-    order.full_item_name.toLowerCase().includes(searchText.value.toLowerCase())
-  )
-})
-
-const paginationConfig = computed(() => ({
-  pageSize: 10,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number, range: [number, number]) =>
-    `${range[0]}-${range[1]} of ${total} items`,
-}))
-
-// Methods
-const fetchData = async () => {
-  try {
-    loading.value = true
-
-    // Build API URLs with date range if provided
-    const baseParams = new URLSearchParams()
-    if (dateRange.value && dateRange.value[0] && dateRange.value[1]) {
-      baseParams.set('start_date', dateRange.value[0].format('YYYY-MM-DD'))
-      baseParams.set('end_date', dateRange.value[1].format('YYYY-MM-DD'))
-    }
-
-    // Mock API calls - replace with your actual API endpoints
-    const [topItemsRes, detailedRes, periodRes, summaryRes] = await Promise.all([
-      Promise.resolve({ data: { value: { success: true, data: mockTopItems } } }),
-      Promise.resolve({ data: { value: { success: true, data: mockOrders } } }),
-      Promise.resolve({ data: { value: { success: true, data: mockSalesByPeriod } } }),
-      Promise.resolve({ data: { value: { success: true, data: { summary: mockSummary, status_breakdown: mockStatusBreakdown } } } })
-    ])
-
-    // Update reactive data with API responses
-    if (topItemsRes.data.value?.success) {
-      topSellingItems.value = topItemsRes.data.value.data || []
-    }
-
-    if (detailedRes.data.value?.success) {
-      orders.value = detailedRes.data.value.data || []
-    }
-
-    if (periodRes.data.value?.success) {
-      salesByPeriod.value = periodRes.data.value.data || []
-    }
-
-    if (summaryRes.data.value?.success) {
-      const summaryData = summaryRes.data.value.data
-      if (summaryData?.summary) {
-        summary.value = summaryData.summary
-      }
-      if (summaryData?.status_breakdown) {
-        statusBreakdown.value = summaryData.status_breakdown
-      }
-    }
-
-    // Initialize status chart
-    initStatusChart()
-
-    message.success('Data loaded successfully')
-  } catch (error) {
-    console.error('Failed to fetch data:', error)
-    message.error('Failed to load sales data')
-  } finally {
-    loading.value = false
-  }
-}
-
-const refreshData = async () => {
-  refreshing.value = true
-  await fetchData()
-  refreshing.value = false
-}
-
-// Fixed date range change handler
-const onDateRangeChange = async (dates: [string, string] | [Dayjs, Dayjs] | null) => {
-  console.log('Date range changed:', dates)
-  if (dates && dates.length === 2) {
-    // Handle both string and Dayjs types
-    if (typeof dates[0] === 'string') {
-      dateRange.value = undefined // Handle string dates separately if needed
-    } else {
-      dateRange.value = dates as [Dayjs, Dayjs]
-    }
-  } else {
-    dateRange.value = undefined
-  }
-  await fetchData()
-}
-
-const onSearch = (value: string) => {
-  console.log('Search:', value)
-}
-
-const viewOrderDetails = (order: Order) => {
-  message.info(`Viewing details for ${order.order_number}`)
-}
-
-const getColorTag = (color: string) => {
-  const colorMap: { [key: string]: string } = {
-    'Black': 'default',
-    'White': 'default',
-    'Red': 'red',
-    'Blue': 'blue',
-    'Green': 'green',
-  }
-  return colorMap[color] || 'default'
-}
-
-const getColorStyle = (color: string) => {
-  const colorMap: { [key: string]: string } = {
-    'Black': '#2c3e50',
-    'White': '#ecf0f1',
-    'Red': '#e74c3c',
-    'Blue': '#3498db',
-    'Navy Blue': '#2c3e50',
-    'Green': '#27ae60',
-    'Pink': '#e91e63',
-    'Purple': '#9c27b0',
-    'Gray': '#95a5a6',
-  }
   return {
-    backgroundColor: colorMap[color] || '#bdc3c7',
-    border: color === 'White' ? '1px solid #ddd' : 'none'
+    total_revenue: totalRevenue,
+    fashion_orders: totalOrders
   }
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+// Function to update the KPI card values and labels
+const updateKpis = () => {
+  const aggregatedData = kpiAggregator(currentSalesData.value);
+  const rangeLabel = chartView.value.toUpperCase();
+
+  if (dashboardData.value.kpis.total_revenue) {
+    dashboardData.value.kpis.total_revenue.value = formatNumber(aggregatedData.total_revenue.toFixed(2));
+    dashboardData.value.kpis.total_revenue.label = `Total Revenue (${rangeLabel})`;
+  }
+  if (dashboardData.value.kpis.fashion_orders) {
+    dashboardData.value.kpis.fashion_orders.value = formatNumber(aggregatedData.fashion_orders);
+    dashboardData.value.kpis.fashion_orders.label = `Fashion Orders (${rangeLabel})`;
+  }
+
+  // Note: Style Enthusiasts and Fashion Items are left static 
 }
 
-const initStatusChart = () => {
-  nextTick(() => {
-    if (statusChartCanvas.value && statusBreakdown.value.length > 0) {
-      statusChartInstance?.destroy()
-      statusChartInstance = new Chart(statusChartCanvas.value, {
-        type: 'doughnut',
-        data: {
-          labels: statusBreakdown.value.map(item => item.status),
-          datasets: [{
-            data: statusBreakdown.value.map(item => item.count),
-            backgroundColor: ['#52c41a', '#1890ff', '#faad14', '#f5222d'],
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom' }
-          }
-        }
-      })
+
+const getIcon = (iconName: string) => {
+  const icons: Record<string, any> = {
+    'dollar-sign': DollarOutlined,
+    'shopping-bag': ShoppingOutlined,
+    'users': UserOutlined,
+    'package': TagOutlined
+  }
+  return icons[iconName] || TagOutlined
+}
+
+const getTrendIcon = (trend: string) => {
+  if (trend === 'up') return ArrowUpOutlined
+  if (trend === 'down') return ArrowDownOutlined
+  return MinusOutlined
+}
+
+const formatNumber = (value: string | number) => {
+  // Removes commas and converts to float if string, then formats
+  const num = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  return num.toLocaleString('en-US', { maximumFractionDigits: 2 })
+}
+
+// --- 4. DATA FETCH & MOCK ---
+
+const MOCK_DASHBOARD_DATA: DashboardResponse = {
+  "last_updated": "2025-10-30 10:00:00",
+  "kpis": {
+    "total_revenue": { "value": "24,567.89", "label": "Total Revenue (1M)", "change": 12.5, "trend": "up", "icon": "dollar-sign", "color": "pink" },
+    "fashion_orders": { "value": "4,120", "label": "Fashion Orders (1M)", "change": 4.2, "trend": "up", "icon": "shopping-bag", "color": "purple" },
+    "style_enthusiasts": { "value": "1,580", "label": "Style Enthusiasts", "change": 1.1, "trend": "up", "icon": "users", "color": "cyan" },
+    "fashion_items": { "value": "890", "label": "Fashion Items (Stock)", "change": -0.5, "trend": "down", "icon": "package", "color": "orange" }
+  },
+
+  // **UPDATED Sales Data Structures with Accessories**
+  "sales_overview_7d": [
+    { "period_label": "24 Oct", "dresses_skirts": 500, "tops_blouses": 300, "footwear": 150, "accessories": 50 },
+    { "period_label": "25 Oct", "dresses_skirts": 620, "tops_blouses": 350, "footwear": 200, "accessories": 60 },
+    { "period_label": "26 Oct", "dresses_skirts": 710, "tops_blouses": 420, "footwear": 250, "accessories": 75 },
+    { "period_label": "27 Oct", "dresses_skirts": 450, "tops_blouses": 280, "footwear": 180, "accessories": 40 },
+    { "period_label": "28 Oct", "dresses_skirts": 800, "tops_blouses": 510, "footwear": 320, "accessories": 90 },
+    { "period_label": "29 Oct", "dresses_skirts": 950, "tops_blouses": 600, "footwear": 400, "accessories": 110 },
+    { "period_label": "30 Oct", "dresses_skirts": 1100, "tops_blouses": 700, "footwear": 450, "accessories": 130 }
+  ],
+
+  "sales_overview_1m": [
+    { "period_label": "1 Oct", "dresses_skirts": 120, "tops_blouses": 80, "footwear": 40, "accessories": 15 },
+    { "period_label": "2 Oct", "dresses_skirts": 130, "tops_blouses": 85, "footwear": 45, "accessories": 17 },
+    { "period_label": "3 Oct", "dresses_skirts": 140, "tops_blouses": 90, "footwear": 50, "accessories": 20 },
+    { "period_label": "4 Oct", "dresses_skirts": 150, "tops_blouses": 95, "footwear": 55, "accessories": 22 },
+    { "period_label": "5 Oct", "dresses_skirts": 160, "tops_blouses": 100, "footwear": 60, "accessories": 25 },
+    { "period_label": "6 Oct", "dresses_skirts": 170, "tops_blouses": 110, "footwear": 65, "accessories": 28 },
+    { "period_label": "7 Oct", "dresses_skirts": 185, "tops_blouses": 115, "footwear": 70, "accessories": 30 },
+    { "period_label": "8 Oct", "dresses_skirts": 200, "tops_blouses": 125, "footwear": 75, "accessories": 35 },
+    { "period_label": "9 Oct", "dresses_skirts": 215, "tops_blouses": 130, "footwear": 80, "accessories": 38 },
+    { "period_label": "10 Oct", "dresses_skirts": 230, "tops_blouses": 140, "footwear": 85, "accessories": 40 },
+    { "period_label": "11 Oct", "dresses_skirts": 250, "tops_blouses": 150, "footwear": 90, "accessories": 45 },
+    { "period_label": "12 Oct", "dresses_skirts": 270, "tops_blouses": 160, "footwear": 95, "accessories": 48 },
+    { "period_label": "13 Oct", "dresses_skirts": 290, "tops_blouses": 175, "footwear": 100, "accessories": 50 },
+    { "period_label": "14 Oct", "dresses_skirts": 310, "tops_blouses": 185, "footwear": 110, "accessories": 55 },
+    { "period_label": "15 Oct", "dresses_skirts": 330, "tops_blouses": 195, "footwear": 120, "accessories": 60 },
+    { "period_label": "16 Oct", "dresses_skirts": 350, "tops_blouses": 210, "footwear": 130, "accessories": 65 },
+    { "period_label": "17 Oct", "dresses_skirts": 370, "tops_blouses": 220, "footwear": 140, "accessories": 70 },
+    { "period_label": "18 Oct", "dresses_skirts": 390, "tops_blouses": 235, "footwear": 150, "accessories": 75 },
+    { "period_label": "19 Oct", "dresses_skirts": 410, "tops_blouses": 250, "footwear": 160, "accessories": 80 },
+    { "period_label": "20 Oct", "dresses_skirts": 430, "tops_blouses": 260, "footwear": 170, "accessories": 85 },
+    { "period_label": "21 Oct", "dresses_skirts": 460, "tops_blouses": 280, "footwear": 180, "accessories": 90 },
+    { "period_label": "22 Oct", "dresses_skirts": 490, "tops_blouses": 300, "footwear": 190, "accessories": 95 },
+    { "period_label": "23 Oct", "dresses_skirts": 520, "tops_blouses": 320, "footwear": 200, "accessories": 100 },
+    { "period_label": "24 Oct", "dresses_skirts": 550, "tops_blouses": 340, "footwear": 210, "accessories": 105 },
+    { "period_label": "25 Oct", "dresses_skirts": 580, "tops_blouses": 360, "footwear": 220, "accessories": 110 },
+    { "period_label": "26 Oct", "dresses_skirts": 620, "tops_blouses": 380, "footwear": 230, "accessories": 115 },
+    { "period_label": "27 Oct", "dresses_skirts": 660, "tops_blouses": 400, "footwear": 240, "accessories": 120 },
+    { "period_label": "28 Oct", "dresses_skirts": 700, "tops_blouses": 420, "footwear": 260, "accessories": 125 },
+    { "period_label": "29 Oct", "dresses_skirts": 740, "tops_blouses": 450, "footwear": 280, "accessories": 130 },
+    { "period_label": "30 Oct", "dresses_skirts": 780, "tops_blouses": 480, "footwear": 300, "accessories": 135 },
+    { "period_label": "31 Oct", "dresses_skirts": 820, "tops_blouses": 500, "footwear": 310, "accessories": 140 }
+  ],
+
+
+  "sales_overview_1y": [
+    { "period_label": "Jan", "dresses_skirts": 1500, "tops_blouses": 800, "footwear": 400, "accessories": 150 },
+    { "period_label": "Feb", "dresses_skirts": 1600, "tops_blouses": 850, "footwear": 450, "accessories": 160 },
+    { "period_label": "Mar", "dresses_skirts": 1800, "tops_blouses": 900, "footwear": 500, "accessories": 180 },
+    { "period_label": "Apr", "dresses_skirts": 1700, "tops_blouses": 880, "footwear": 480, "accessories": 170 },
+    { "period_label": "May", "dresses_skirts": 2000, "tops_blouses": 1000, "footwear": 550, "accessories": 200 },
+    { "period_label": "Jun", "dresses_skirts": 2200, "tops_blouses": 1100, "footwear": 600, "accessories": 220 },
+    { "period_label": "Jul", "dresses_skirts": 2100, "tops_blouses": 1050, "footwear": 580, "accessories": 210 },
+    { "period_label": "Aug", "dresses_skirts": 2400, "tops_blouses": 1200, "footwear": 650, "accessories": 240 },
+    { "period_label": "Sep", "dresses_skirts": 2600, "tops_blouses": 1300, "footwear": 700, "accessories": 260 },
+    { "period_label": "Oct", "dresses_skirts": 2800, "tops_blouses": 1400, "footwear": 750, "accessories": 280 }
+  ],
+
+  "top_categories": [
+    { "id": "cat1", "name": "Dresses & Skirts", "revenue": "9,500.50", "orders": 850 },
+    { "id": "cat2", "name": "Tops & Blouses", "revenue": "7,120.90", "orders": 780 },
+    { "id": "cat3", "name": "Footwear", "revenue": "4,500.00", "orders": 520 },
+    { "id": "cat4", "name": "Accessories", "revenue": "3,000.49", "orders": 900 }
+  ],
+
+  "recent_orders": [
+    { "id": "ord1005", "order_number": "#ORD1005", "customer_name": "Sophea Sok", "amount": "150.99", "status": "completed", "status_label": "Completed", "status_color": "green" },
+    { "id": "ord1004", "order_number": "#ORD1004", "customer_name": "Dara Roth", "amount": "99.50", "status": "pending", "status_label": "Pending", "status_color": "gold" },
+    { "id": "ord1003", "order_number": "#ORD1003", "customer_name": "Malis K.", "amount": "240.00", "status": "shipped", "status_label": "Shipped", "status_color": "blue" },
+    { "id": "ord1002", "order_number": "#ORD1002", "customer_name": "Vanna L.", "amount": "65.75", "status": "cancelled", "status_label": "Cancelled", "status_color": "red" }
+  ],
+
+  "low_stock_items": [
+    { "id": "item1", "item_name": "Black Knit Dress", "color": "Black", "size": "One Size", "quantity": 5, "price": "45.00" },
+    { "id": "item2", "item_name": "Slim Fit Jeans", "color": "Dark Blue", "size": "S", "quantity": 8, "price": "75.00" },
+    { "id": "item3", "item_name": "White Summer Blouse", "color": "White", "size": "M", "quantity": 10, "price": "30.50" },
+    { "id": "item4", "item_name": "Leather Ankle Boots", "color": "Brown", "size": "EU 38", "quantity": 6, "price": "120.00" }
+  ]
+}
+
+const fetchDashboard = async () => {
+  loading.value = true
+  error.value = null
+
+  // Using Mock Data:
+  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+  dashboardData.value = MOCK_DASHBOARD_DATA;
+
+  // Set initial KPIs based on the default chart view ('1m')
+  updateKpis();
+
+  loading.value = false
+}
+
+// --- 5. CHART INITIALIZATION ---
+
+const initChart = () => {
+  const dataToUse = currentSalesData.value;
+
+  if (!salesChart.value || !dataToUse || dataToUse.length === 0) return
+
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+
+  const ctx = salesChart.value.getContext('2d')
+  if (!ctx) return
+
+  const labels = dataToUse.map(d => d.period_label) // Using dynamic period_label
+
+  // **UPDATED Chart Datasets with Accessories**
+  const datasets = [
+    {
+      label: 'Dresses & Skirts', // Matching category name
+      data: dataToUse.map(d => d.dresses_skirts),
+      borderColor: '#ec4899', // Pink
+      backgroundColor: 'rgba(236, 72, 153, 0.1)',
+      tension: 0.4
+    },
+    {
+      label: 'Tops & Blouses', // Matching category name
+      data: dataToUse.map(d => d.tops_blouses),
+      borderColor: '#8b5cf6', // Purple
+      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+      tension: 0.4
+    },
+    {
+      label: 'Footwear', // Matching category name
+      data: dataToUse.map(d => d.footwear),
+      borderColor: '#06b6d4', // Cyan
+      backgroundColor: 'rgba(6, 182, 212, 0.1)',
+      tension: 0.4
+    },
+    {
+      label: 'Accessories', // 🎉 NEW: Matching category name
+      data: dataToUse.map(d => d.accessories),
+      borderColor: '#f59e0b', // Amber/Orange
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      tension: 0.4
+    }
+  ]
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end' }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: (value: any) => '$' + formatNumber(value) } }
+      }
     }
   })
 }
 
-// Enhanced mock data for demonstration
-const mockTopItems = [
-  {
-    item_name: 'Floral Dress',
-    size: 'M',
-    color: 'Blue',
-    full_item_name: 'Floral Summer Dress',
-    total_quantity_sold: '125',
-    total_revenue: '3750.00',
-    average_price: '30.00',
-    total_orders: 95
-  },
-  {
-    item_name: 'Silk Blouse',
-    size: 'L',
-    color: 'White',
-    full_item_name: 'Classic Silk Blouse',
-    total_quantity_sold: '89',
-    total_revenue: '2670.00',
-    average_price: '30.00',
-    total_orders: 72
-  },
-  {
-    item_name: 'Ankle Boots',
-    size: '8',
-    color: 'Black',
-    full_item_name: 'Leather Ankle Boots',
-    total_quantity_sold: '65',
-    total_revenue: '5850.00',
-    average_price: '90.00',
-    total_orders: 58
-  }
-]
+// --- 6. LIFECYCLE & WATCHERS ---
 
-const mockOrders = [
-  {
-    order_number: 'ORD001',
-    placed_at: '2024-08-28T10:30:00Z',
-    item_name: 'Dress',
-    size: 'M',
-    color: 'Blue',
-    full_item_name: 'Floral Summer Dress',
-    color_name: 'Navy Blue',
-    size_name: 'Medium',
-    quantity: 1,
-    final_price: '29.99',
-    total_price: '29.99',
-    customer_id: 'CUST001'
-  },
-  {
-    order_number: 'ORD002',
-    placed_at: '2024-08-28T09:15:00Z',
-    item_name: 'Blouse',
-    size: 'S',
-    color: 'White',
-    full_item_name: 'Classic Silk Blouse',
-    color_name: 'White',
-    size_name: 'Small',
-    quantity: 2,
-    final_price: '59.98',
-    total_price: '59.98',
-    customer_id: 'CUST002'
-  },
-  {
-    order_number: 'ORD003',
-    placed_at: '2024-08-28T08:45:00Z',
-    item_name: 'Boots',
-    size: '7',
-    color: 'Black',
-    full_item_name: 'Leather Ankle Boots',
-    color_name: 'Black',
-    size_name: '7',
-    quantity: 1,
-    final_price: '89.99',
-    total_price: '89.99',
-    customer_id: 'CUST003'
-  }
-]
-
-const mockSalesByPeriod = [
-  { period: '2024-08-25', orders_count: 45, revenue: '1350.00' },
-  { period: '2024-08-26', orders_count: 52, revenue: '1560.00' },
-  { period: '2024-08-27', orders_count: 38, revenue: '1140.00' },
-  { period: '2024-08-28', orders_count: 61, revenue: '1830.00' }
-]
-
-const mockSummary = {
-  total_orders: 196,
-  total_revenue: '5880.00',
-  average_order_value: '30.00',
-  total_delivery_fees: '392.00'
-}
-
-const mockStatusBreakdown = [
-  { status: 'Completed', count: 150, revenue: '4500.00' },
-  { status: 'Processing', count: 30, revenue: '900.00' },
-  { status: 'Shipped', count: 16, revenue: '480.00' }
-]
-
-// Lifecycle
-onMounted(async () => {
-  await fetchData()
+onMounted(() => {
+  fetchDashboard()
 })
 
-onUnmounted(() => {
-  statusChartInstance?.destroy()
+// 1. Watch the chart filter (7D/1M/1Y)
+watch(chartView, () => {
+  updateKpis(); // **Crucial: Recalculate and update KPIs first**
+  nextTick(() => {
+    initChart(); // Then redraw the chart with the new data set
+  })
 })
-</script>
 
-<style scoped>
-.sales-dashboard {
+// 2. Watch the initial data load to draw the first chart
+watch(() => dashboardData.value.sales_overview_1m, () => {
+  if (chartView.value === '1m' && dashboardData.value.sales_overview_1m.length > 0) {
+    nextTick(() => {
+      initChart()
+    })
+  }
+}, { deep: true, immediate: true }) // immediate: true ensures it runs on initial load
+
+</script><style scoped>
+.dashboard-container {
   padding: 24px;
+  background: #f5f7fa;
   min-height: 100vh;
 }
 
-.page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  margin: -24px -24px 24px -24px;
-  padding: 0 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.summary-cards {
+.dashboard-header {
   margin-bottom: 24px;
 }
 
-.summary-cards .ant-card {
-  text-align: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+.dashboard-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
 }
 
-.charts-section {
-  margin-bottom: 32px;
-}
-
-.charts-section .ant-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.chart-container,
-.status-chart-container {
-  position: relative;
-  height: 300px;
-  width: 100%;
-}
-
-.data-sections {
-  display: flex;
-  flex-direction: column;
-  gap: px;
-}
-
-/* Modern Section Styling */
-.modern-section {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.15);
-  padding: 28px;
-  position: relative;
-  overflow: hidden;
-}
-
-.modern-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
-  border-radius: 24px 24px 0 0;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid rgba(102, 126, 234, 0.1);
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #2c3e50;
+.dashboard-subtitle {
+  color: #6b7280;
   margin: 0;
 }
 
-.title-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+.kpi-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.section-stats {
+.kpi-content {
   display: flex;
-  gap: 8px;
-}
-
-.stat-badge {
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.section-controls {
-  display: flex;
-  align-items: center;
   gap: 16px;
 }
 
-.search-input {
-  width: 280px;
-}
-
-.view-toggle .ant-btn-group {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-/* Top Items Grid Styling */
-.top-items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
-  opacity: 1;
-  transition: all 0.3s ease;
-}
-
-.top-items-grid.loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.top-item-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 24px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: slideInUp 0.6s ease-out both;
-  cursor: pointer;
-}
-
-.top-item-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, transparent, rgba(102, 126, 234, 0.05));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.top-item-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-}
-
-.top-item-card:hover::before {
-  opacity: 1;
-}
-
-.item-rank {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 50%;
+.kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-size: 24px;
+}
+
+.kpi-pink .kpi-icon {
+  background: #fce7f3;
+  color: #ec4899;
+}
+
+.kpi-purple .kpi-icon {
+  background: #ede9fe;
+  color: #8b5cf6;
+}
+
+.kpi-cyan .kpi-icon {
+  background: #cffafe;
+  color: #06b6d4;
+}
+
+.kpi-orange .kpi-icon {
+  background: #fed7aa;
+  color: #f97316;
+}
+
+.kpi-details {
+  flex: 1;
+}
+
+.kpi-label {
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.item-header {
-  margin-bottom: 20px;
-}
-
-.item-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 8px;
-  line-height: 1.3;
-}
-
-.item-attributes {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.color-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.size-badge {
-  padding: 4px 12px;
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.item-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.metric {
-  text-align: center;
-  padding: 16px 8px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.2s ease;
-}
-
-.metric:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-2px);
-}
-
-.metric-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #2c3e50;
+  color: #6b7280;
   margin-bottom: 4px;
 }
 
-.metric-label {
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.kpi-change {
   font-size: 12px;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.item-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 4px;
 }
 
-.orders-count {
-  font-size: 14px;
-  color: #7f8c8d;
+.trend-up {
+  color: #10b981;
+}
+
+.trend-down {
+  color: #ef4444;
+}
+
+.trend-neutral {
+  color: #6b7280;
+}
+
+.chart-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container {
+  height: 300px;
+  padding: 16px 0;
+}
+
+.categories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.category-item {
+  padding: 6px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.category-name {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.category-revenue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.table-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.orders-list,
+.stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-item,
+.stock-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.order-avatar,
+.stock-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.order-info,
+.stock-info {
+  flex: 1;
+}
+
+.order-customer,
+.stock-name {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.order-details,
+.stock-variant {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.order-amount {
+  font-weight: 600;
+  color: #1f2937;
+  margin-right: 12px;
+}
+
+.stock-quantity {
+  text-align: right;
+}
+
+.quantity-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #f59e0b;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
 }
 
-.trend-indicator {
-  font-size: 14px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 12px;
-}
-
-.trend-indicator.positive {
-  background: rgba(39, 174, 96, 0.1);
-  color: #27ae60;
-}
-
-/* Timeline Styling */
-.orders-timeline {
-  position: relative;
-  padding-left: 32px;
-}
-
-.orders-timeline::before {
-  content: '';
-  position: absolute;
-  left: 15px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(180deg, #667eea, #764ba2, transparent);
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 24px;
-  animation: slideInLeft 0.6s ease-out both;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -24px;
-  top: 16px;
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  z-index: 2;
-}
-
-.timeline-content {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.timeline-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s ease;
-}
-
-.timeline-content:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-}
-
-.timeline-content:hover::before {
-  transform: scaleX(1);
-}
-
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.order-info .order-number {
-  font-size: 16px;
-  font-weight: 700;
-  color: #667eea;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.order-number:hover {
-  color: #764ba2;
-}
-
-.order-time {
-  font-size: 12px;
-  color: #7f8c8d;
+.stock-date {
+  font-size: 11px;
+  color: #6b7280;
   margin-top: 4px;
 }
 
-.order-price {
-  font-size: 20px;
-  font-weight: 700;
-  color: #27ae60;
-  background: rgba(39, 174, 96, 0.1);
-  padding: 8px 16px;
+.actions-card {
   border-radius: 12px;
-  border: 1px solid rgba(39, 174, 96, 0.2);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.item-preview {
+.action-item {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
   align-items: center;
-}
-
-.item-image-placeholder {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+  gap: 12px;
+  padding: 24px;
+  background: #f9fafb;
   border-radius: 12px;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.item-image-placeholder::before {
-  content: '👗';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  opacity: 0.8;
+.action-item:hover {
+  background: #e0e7ff;
+  transform: translateY(-2px);
 }
 
-.item-info .item-name {
-  font-weight: 600;
-  color: #2c3e50;
-  font-size: 16px;
-  margin-bottom: 6px;
+.action-icon {
+  font-size: 32px;
+  color: #6366f1;
 }
 
-.item-specs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.action-label {
   font-size: 14px;
-  color: #7f8c8d;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: center;
 }
 
-.color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* Table Styling */
-.orders-table-container {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.modern-table {
-  background: transparent;
-}
-
-.modern-table .ant-table-thead>tr>th {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  font-weight: 600;
-  border: none;
-  padding: 16px;
-}
-
-.modern-table .ant-table-tbody>tr>td {
-  border: none;
-  padding: 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.modern-table .ant-table-tbody>tr:hover>td {
-  background: rgba(102, 126, 234, 0.05);
-}
-
-/* Animations */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.fashion-sales-chart {
-  position: relative;
-  height: 100%;
-  width: 100%;
-  animation: fadeInChart 0.8s ease-out;
-}
-
-@keyframes fadeInChart {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .top-items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .sales-dashboard {
-    padding: 16px;
-  }
-
-  .page-header {
-    margin: -16px -16px 16px -16px;
-    padding: 0 16px;
-  }
-
-  .modern-section {
-    padding: 20px;
-  }
-
-  .section-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .section-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .search-input {
-    width: 200px;
-  }
-
-  .top-items-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .item-metrics {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .timeline-content {
-    padding: 16px;
-  }
-
-  .item-preview {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .section-title {
-    font-size: 20px;
-  }
-
-  .item-metrics {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .order-header {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .search-input {
-    width: 100%;
-  }
+.kpi-section,
+.charts-section,
+.tables-section,
+.actions-section {
+  margin-bottom: 16px;
 }
 </style>

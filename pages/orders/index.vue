@@ -4,12 +4,14 @@
       <template #extra>
         <div style="display: flex; gap: 8px;">
           <a-button @click="handleRefresh" :loading="loading">
-            <template #icon><ReloadOutlined /></template>
+            <template #icon>
+              <ReloadOutlined />
+            </template>
             Refresh
           </a-button>
         </div>
       </template>
-    </a-page-header>
+    </a-page-header>z
 
     <!-- Enhanced Filter Section -->
     <a-card class="filter-card" style="margin-bottom: 16px;">
@@ -18,13 +20,8 @@
           <!-- Search Input -->
           <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Search" style="margin-bottom: 0;">
-              <a-input
-                v-model:value="filters.search"
-                placeholder="Order #, Customer name, Email"
-                allow-clear
-                @pressEnter="handleSearch"
-                @input="debouncedSearch"
-              >
+              <a-input v-model:value="filters.search" placeholder="Order #, Customer name, Email" allow-clear
+                @pressEnter="handleSearch" @input="debouncedSearch">
                 <template #prefix>
                   <SearchOutlined />
                 </template>
@@ -35,12 +32,7 @@
           <!-- Order Status Filter -->
           <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Order Status" style="margin-bottom: 0;">
-              <a-select
-                v-model:value="filters.status"
-                placeholder="All Statuses"
-                allow-clear
-                @change="handleSearch"
-              >
+              <a-select v-model:value="filters.status" placeholder="All Statuses" allow-clear @change="handleSearch">
                 <a-select-option value="pending">
                   <a-tag color="orange" size="small">Pending</a-tag>
                 </a-select-option>
@@ -66,12 +58,8 @@
           <!-- Payment Status Filter -->
           <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
             <a-form-item label="Payment Status" style="margin-bottom: 0;">
-              <a-select
-                v-model:value="filters.paymentStatus"
-                placeholder="All Payments"
-                allow-clear
-                @change="handleSearch"
-              >
+              <a-select v-model:value="filters.paymentStatus" placeholder="All Payments" allow-clear
+                @change="handleSearch">
                 <a-select-option value="pending">
                   <a-tag color="orange" size="small">Pending</a-tag>
                 </a-select-option>
@@ -85,124 +73,19 @@
             </a-form-item>
           </a-col>
 
-          <!-- Date Range Filter -->
-          <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
-            <a-form-item label="Date Range" style="margin-bottom: 0;">
-              <a-range-picker
-                v-model:value="filters.dateRange"
-                style="width: 100%;"
-                @change="handleSearch"
-                :presets="datePresets"
-              />
-            </a-form-item>
-          </a-col>
-
-          <!-- Amount Range Filter -->
-          <!-- <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
-            <a-form-item label="Amount Range" style="margin-bottom: 0;">
-              <a-input-group compact>
-                <a-input
-                  v-model:value="filters.minAmount"
-                  placeholder="Min $"
-                  style="width: 50%; text-align: center;"
-                  type="number"
-                  @change="debouncedSearch"
-                />
-                <a-input
-                  v-model:value="filters.maxAmount"
-                  placeholder="Max $"
-                  style="width: 50%; text-align: center; border-left: 0;"
-                  type="number"
-                  @change="debouncedSearch"
-                />
-              </a-input-group>
-            </a-form-item>
-          </a-col> -->
-
-          <!-- Payment Method Filter -->
-          <!-- <a-col :xs="24" :sm="12" :md="6" :lg="6" :xl="4">
-            <a-form-item label="Payment Method" style="margin-bottom: 0;">
-              <a-select
-                v-model:value="filters.paymentMethod"
-                placeholder="All Methods"
-                allow-clear
-                @change="handleSearch"
-              >
-                <a-select-option value="card">Credit Card</a-select-option>
-                <a-select-option value="khqr">KHQR</a-select-option>
-                <a-select-option value="cash">Cash on Delivery</a-select-option>
-                <a-select-option value="bank_transfer">Bank Transfer</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col> -->
         </a-row>
 
-        <!-- Quick Filters Row -->
-        <!-- <a-row :gutter="8" style="margin-top: 16px;">
-          <a-col>
-            <a-space wrap>
-              <a-tag
-                :color="quickFilter === 'today' ? 'blue' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('today')"
-              >
-                Today's Orders
-              </a-tag>
-              <a-tag
-                :color="quickFilter === 'pending_payment' ? 'orange' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('pending_payment')"
-              >
-                Pending Payment
-              </a-tag>
-              <a-tag
-                :color="quickFilter === 'ready_to_ship' ? 'cyan' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('ready_to_ship')"
-              >
-                Ready to Ship
-              </a-tag>
-              <a-tag
-                :color="quickFilter === 'high_value' ? 'gold' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('high_value')"
-              >
-                High Value ($100+)
-              </a-tag>
-              <a-tag
-                :color="quickFilter === 'this_week' ? 'purple' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('this_week')"
-              >
-                This Week
-              </a-tag>
-              <a-tag
-                :color="quickFilter === 'need_attention' ? 'red' : 'default'"
-                style="cursor: pointer; user-select: none;"
-                @click="applyQuickFilter('need_attention')"
-              >
-                Need Attention
-              </a-tag>
-            </a-space>
-          </a-col>
-        </a-row> -->
 
         <!-- Action Buttons Row -->
         <a-row :gutter="8" style="margin-top: 16px;" justify="space-between">
           <a-col>
             <a-space>
-              <a-button @click="handleSearch" type="primary" :loading="loading">
-                <template #icon><SearchOutlined /></template>
-                Search
-              </a-button>
               <a-button @click="clearFilters">
-                <template #icon><ClearOutlined /></template>
+                <template #icon>
+                  <ClearOutlined />
+                </template>
                 Clear
               </a-button>
-              <!-- <a-button @click="showExportModal = true">
-                <template #icon><DownloadOutlined /></template>
-                Export
-              </a-button> -->
             </a-space>
           </a-col>
           <a-col>
@@ -219,24 +102,12 @@
 
     <!-- Orders Table -->
     <a-card>
-      <a-table
-        :dataSource="orders"
-        :columns="columns"
-        :loading="loading"
-        :pagination="paginationConfig"
-        :scroll="{ x: 1500 }"
-        row-key="id"
-        @change="handleTableChange"
-        size="middle"
-      >
+      <a-table :dataSource="orders" :columns="columns" :loading="loading" :pagination="paginationConfig"
+        :scroll="{ x: 1500 }" row-key="id" @change="handleTableChange" size="middle">
         <!-- Order Number Column -->
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'order_number'">
-            <a-button
-              type="link"
-              @click="viewOrderDetails(record)"
-              style="padding: 0; font-weight: 600;"
-            >
+            <a-button type="link" @click="viewOrderDetails(record)" style="padding: 0; font-weight: 600;">
               #{{ record.order_number }}
             </a-button>
           </template>
@@ -244,11 +115,7 @@
           <!-- Customer Column -->
           <template v-else-if="column.key === 'customer'">
             <div class="customer-info">
-              <a-avatar
-                :src="record.customer?.profile_image"
-                :size="32"
-                style="margin-right: 8px;"
-              >
+              <a-avatar :src="record.customer?.profile_image" :size="32" style="margin-right: 8px;">
                 {{ record.customer?.first_name?.[0] }}{{ record.customer?.last_name?.[0] }}
               </a-avatar>
               <div>
@@ -259,14 +126,14 @@
           </template>
 
           <!-- Status Column -->
-          <template v-else-if="column.key === 'status'">
+          <template v-else-if="column.key === 'order_status'">
             <a-tag :color="getStatusColor(record.order_status)">
               {{ record.order_status?.toUpperCase() }}
             </a-tag>
           </template>
 
           <!-- Payment Status Column -->
-          <template v-else-if="column.key === 'payment_status'">
+          <template v-else-if="column.key === 'status'">
             <a-tag :color="getPaymentStatusColor(record.status)">
               {{ record.status?.toUpperCase() }}
             </a-tag>
@@ -286,12 +153,7 @@
           <template v-else-if="column.key === 'items'">
             <div class="order-items">
               <span>{{ record.order_items?.length || 0 }} items</span>
-              <a-button
-                type="link"
-                size="small"
-                @click="showOrderItems(record)"
-                style="padding: 0 4px;"
-              >
+              <a-button type="link" size="small" @click="showOrderItems(record)" style="padding: 0 4px;">
                 View
               </a-button>
             </div>
@@ -308,9 +170,9 @@
                   <a-menu-item key="view">
                     <EyeOutlined /> View Details
                   </a-menu-item>
-                  <!-- <a-menu-item key="edit">
+                  <a-menu-item key="edit">
                     <EditOutlined /> Edit Order
-                  </a-menu-item> -->
+                  </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item key="accept" v-if="record.order_status === 'pending'">
                     <CheckOutlined /> Accept Order
@@ -344,12 +206,7 @@
     </a-card>
 
     <!-- Order Details Modal -->
-    <a-modal
-      v-model:open="showDetailsModal"
-      title="Order Details"
-      width="900px"
-      :footer="null"
-    >
+    <a-modal v-model:open="showDetailsModal" title="Order Details" width="900px" :footer="null">
       <div v-if="selectedOrder">
         <a-descriptions :column="2" bordered>
           <a-descriptions-item label="Order Number">
@@ -398,21 +255,13 @@
         </a-descriptions>
 
         <a-divider>Order Items</a-divider>
-        <a-table
-          :dataSource="selectedOrder.order_items || []"
-          :columns="itemColumns"
-          :pagination="false"
-          size="small"
-        >
+        <a-table :dataSource="selectedOrder.order_items || []" :columns="itemColumns" :pagination="false" size="small">
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'item'">
               <div class="item-info">
-                <img
-                  :src="record.variant?.image"
-                  :alt="record.item_name"
+                <img :src="record.variant?.image" :alt="record.item_name"
                   style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 8px;"
-                  @error="handleImageError"
-                />
+                  @error="handleImageError" />
                 <div>
                   <div style="font-weight: 500;">{{ record.item_name }}</div>
                   <div style="font-size: 12px; color: #666;">
@@ -433,14 +282,9 @@
     </a-modal>
 
     <!-- Export Modal -->
-    <a-modal
-      v-model:open="showExportModal"
-      title="Export Orders"
-      @ok="handleExport"
-      :confirmLoading="exportLoading"
-    >
+    <a-modal v-model:open="showExportModal" title="Export Orders" @ok="handleExport" :confirmLoading="exportLoading">
       <a-form layout="vertical">
-        <a-form-item label="Export Format"> 
+        <a-form-item label="Export Format">
           <a-radio-group v-model:value="exportFormat">
             <a-radio value="csv">CSV</a-radio>
             <a-radio value="xlsx">Excel</a-radio>
@@ -627,8 +471,8 @@ const quickFilter = ref<string | null>(null);
 // Enhanced filters
 const filters = ref({
   search: "",
-  status: undefined as string | undefined,
-  paymentStatus: undefined as string | undefined,
+  status: undefined as string | undefined, // Corresponds to order_status
+  paymentStatus: undefined as string | undefined, // Corresponds to payment status (Order.status)
   paymentMethod: undefined as string | undefined,
   dateRange: undefined as [Dayjs, Dayjs] | undefined,
   minAmount: undefined as string | undefined,
@@ -689,7 +533,7 @@ const columns: TableColumnsType<Order> = [
   {
     title: "Status",
     dataIndex: "order_status",
-    key: "status",
+    key: "order_status", // Changed key to match dataIndex for clarity in handling filters
     width: 120,
     filters: [
       { text: "Pending", value: "pending" },
@@ -773,7 +617,7 @@ const paginationConfig = computed(() => ({
   total: totalOrders.value,
   showSizeChanger: true,
   showQuickJumper: true,
-  showTotal: (total: number, range: [number, number]) => 
+  showTotal: (total: number, range: [number, number]) =>
     `${range[0]}-${range[1]} of ${total} orders`,
   pageSizeOptions: ["10", "20", "50", "100"],
 }));
@@ -923,15 +767,40 @@ const applyQuickFilter = (filterType: string) => {
       filters.value.dateRange = [dayjs().subtract(30, 'day'), dayjs().subtract(1, 'day')];
       break;
   }
-  
+
   handleSearch();
 };
 
 const handleTableChange: TableProps["onChange"] = (pagination, tableFilters, sorter) => {
+
+  // 1. Handle Pagination
   if (pagination) {
     currentPage.value = pagination.current || 1;
     pageSize.value = pagination.pageSize || 10;
   }
+
+  // 2. Handle Order Status Filter (key: 'order_status')
+  const orderStatuses = tableFilters.order_status as string[] | undefined;
+  if (orderStatuses && orderStatuses.length > 0) {
+    // Assuming your API accepts comma-separated list for multiple selections
+    filters.value.status = orderStatuses.join(',');
+  } else {
+    filters.value.status = undefined;
+  }
+
+  // 3. Handle Payment Status Filter (key: 'payment_status')
+  const paymentStatuses = tableFilters.payment_status as string[] | undefined;
+  if (paymentStatuses && paymentStatuses.length > 0) {
+    // Assuming your API accepts comma-separated list for multiple selections
+    filters.value.paymentStatus = paymentStatuses.join(',');
+  } else {
+    filters.value.paymentStatus = undefined;
+  }
+
+  // NOTE: You may also want to handle sorting here if your API supports it.
+  // Example: if (sorter && sorter.field && sorter.order) { ... }
+
+  // 4. Fetch data with the new pagination and filters
   fetchOrders(currentPage.value, pageSize.value);
 };
 
@@ -987,7 +856,7 @@ const updateOrderStatus = async (orderId: string, status: string) => {
     loading.value = true;
     await useFetchDataApi(`/orders/${orderId}/order-status`, {
       method: "PUT",
-      body: { 
+      body: {
         order_status: status
       },
     });
@@ -1004,7 +873,7 @@ const updatePaymentStatus = async (orderId: string, status: string) => {
     loading.value = true;
     await useFetchDataApi(`/orders/${orderId}/payment-status`, {
       method: "PUT",
-      body: { 
+      body: {
         status: status
       },
     });
@@ -1031,7 +900,7 @@ const handleExport = async () => {
 
     const response = await fetch(`/api/orders/export?${params}`);
     const blob = await response.blob();
-    
+
     // Create download link
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1041,7 +910,7 @@ const handleExport = async () => {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
+
     showExportModal.value = false;
   } catch (error) {
     console.error("Export failed:", error);
@@ -1165,7 +1034,7 @@ onMounted(() => {
     border-right: none;
     border-radius: 0;
   }
-  
+
   :deep(.ant-col) {
     margin-bottom: 8px;
   }

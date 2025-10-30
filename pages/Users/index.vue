@@ -53,9 +53,9 @@
             Refresh
           </a-button>
           <!-- Debug Button -->
-          <a-button @click="debugUserData" type="dashed" :icon="h(SafetyOutlined)">
+          <!-- <a-button @click="debugUserData" type="dashed" :icon="h(SafetyOutlined)">
             Debug Data
-          </a-button>
+          </a-button> -->
         </div>
       </template>
 
