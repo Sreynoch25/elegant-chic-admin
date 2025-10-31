@@ -37,9 +37,9 @@
               <NuxtLink to="/products">All Products</NuxtLink>
             </a-menu-item>
 
-            <!-- <a-menu-item key="products-inventory">
-              <NuxtLink to="/products/inventory">Inventory</NuxtLink>
-            </a-menu-item> -->
+            <a-menu-item key="products-inventory">
+              <NuxtLink to="/products/trending">Top trending</NuxtLink>
+            </a-menu-item>
           </a-sub-menu>
 
           <!-- Categories -->

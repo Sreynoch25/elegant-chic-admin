@@ -101,20 +101,20 @@
           </template>
 
           <!-- Actions Column -->
-          <template v-else-if="column.key === 'actions'">
+          <!-- <template v-else-if="column.key === 'actions'">
             <div class="action-buttons">
               <a-tooltip title="Edit User">
                 <a-button type="text" size="small" :icon="h(EditOutlined)" @click="showEditModal(record)"
                   class="action-btn edit-btn" />
               </a-tooltip>
-              <!-- <a-tooltip title="Delete User">
+              <a-tooltip title="Delete User">
                 <a-popconfirm title="Are you sure you want to delete this user?" ok-text="Yes" cancel-text="No"
                   @confirm="deleteUser(record.id)" placement="topRight">
                   <a-button type="text" size="small" danger :icon="h(DeleteOutlined)" class="action-btn delete-btn" />
                 </a-popconfirm>
-              </a-tooltip> -->
+              </a-tooltip>
             </div>
-          </template>
+          </template> -->
         </template>
       </a-table>
     </a-card>
@@ -519,12 +519,12 @@ const columns: TableColumnProps[] = [
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     }
   },
-  {
-    title: 'Actions',
-    key: 'actions',
-    width: 120,
-    align: 'center' as const
-  }
+  // {
+  //   title: 'Actions',
+  //   key: 'actions',
+  //   width: 120,
+  //   align: 'center' as const
+  // }
 ]
 
 // Form validation rules with proper boolean handling

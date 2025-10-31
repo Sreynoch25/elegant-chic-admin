@@ -14,11 +14,6 @@
     <a-card style="margin-bottom: 16px;">
       <a-form layout="inline" :model="filterState" @submit.prevent>
         <a-row :gutter="16" style="width: 100%;">
-          <!-- <a-col :span="6">
-            <a-form-item label="Search" class="!mb-3">
-              <a-input v-model:value="filterState.search" placeholder="Search by name or description" />
-            </a-form-item>
-          </a-col> -->
           <a-col :span="6">
             <a-form-item label="Category">
               <a-select v-model:value="filterState.category_id" placeholder="Select category" :options="categoryOptions"
@@ -37,12 +32,6 @@
                 allowClear />
             </a-form-item>
           </a-col>
-          <!-- <a-col :span="6">
-            <a-form-item label="Discount">
-              <a-select v-model:value="filterState.discount_id" placeholder="Select discount" :options="discountOptions"
-                allowClear />
-            </a-form-item>
-          </a-col> -->
           <a-col :span="24" style="margin-top: 16px; text-align: right;">
             <a-button type="primary" @click="applyFilters" :loading="loading">
               Apply Filters
@@ -57,7 +46,6 @@
 
     <a-card>
       <a-table :columns="columns" :data-source="items" :loading="loading" row-key="id" :expand-row-by-click="true">
-        <!-- Existing table content remains unchanged -->
         <template #expandedRowRender="{ record }">
           <div style="margin: 16px 0;">
             <h4>Variants</h4>
@@ -102,6 +90,11 @@
           <template v-if="column.key === 'variants_count'">
             <a-badge :count="record.variants?.length || 0" />
           </template>
+          <template v-if="column.key === 'featured_trending'">
+            <a-tag :color="record.is_featured_trending ? 'gold' : 'default'">
+              {{ record.is_featured_trending ? '★ Featured' : '☆ Not Featured' }}
+            </a-tag>
+          </template>
           <template v-if="column.key === 'created_at'">
             <span>{{ formatDate(record.created_at) }}</span>
           </template>
@@ -112,13 +105,21 @@
           </template>
 
           <template v-if="column.key === 'action'">
-            <div class="space-x-2" style="display: flex;">
+            <div class="space-x-2" style="display: flex; gap: 0.5rem;">
               <a-button type="primary" size="small" @click="editItem(record)">
                 Edit
               </a-button>
+              <a-button 
+                :type="record.is_featured_trending ? 'default' : 'dashed'" 
+                size="small" 
+                @click="toggleTopTrending(record.id, record.is_featured_trending)"
+                :loading="record.toggleLoading"
+              >
+                {{ record.is_featured_trending ? '★ Featured' : '☆ Feature' }}
+              </a-button>
               <a-popconfirm title="Are you sure you want to delete this item?" ok-text="Yes" cancel-text="No"
                 @confirm="deleteItem(record.id)">
-                <a-button size="small" danger style="margin-left: 0.5rem;">
+                <a-button size="small" danger>
                   Delete
                 </a-button>
               </a-popconfirm>
@@ -483,6 +484,11 @@ const columns = [
     width: 100,
   },
   {
+    title: 'Featured',
+    key: 'featured_trending',
+    width: 100,
+  },
+  {
     title: 'Created At',
     key: 'created_at',
     dataIndex: 'created_at',
@@ -499,7 +505,7 @@ const columns = [
   {
     title: 'Action',
     key: 'action',
-    width: 150,
+    width: 200,
   },
 ];
 
@@ -866,6 +872,44 @@ const deleteVariant = async (variantId: string, itemId: string) => {
   } catch (error: any) {
     console.error('❌ Delete Variant Error:', error);
     message.error(error.message || 'Failed to delete variant');
+  }
+};
+
+const toggleTopTrending = async (itemId: string, currentStatus: boolean) => {
+  try {
+    // Find the item and set loading state
+    const item = items.value.find(i => i.id === itemId) as any;
+    if (item) {
+      item.toggleLoading = true;
+    }
+
+    const { data } = await useFetchDataApi<ApiResponse>(`/item/${itemId}/toggle-top-trending`, {
+      method: 'PATCH'
+    });
+
+    if (data.value?.success) {
+      message.success(data.value.message || 'Top trending status updated successfully');
+      
+      // Update the item in the list
+      if (item && data.value.data) {
+        item.is_featured_trending = data.value.data.is_featured_trending;
+        item.featured_trending_at = data.value.data.featured_trending_at;
+      }
+    } else {
+      message.success('Top trending status updated successfully');
+    }
+
+    // Refresh items to ensure sync
+    await fetchItems();
+  } catch (error: any) {
+    console.error('❌ Toggle Top Trending Error:', error);
+    message.error(error.message || 'Failed to toggle top trending status');
+  } finally {
+    // Clear loading state
+    const item = items.value.find(i => i.id === itemId) as any;
+    if (item) {
+      item.toggleLoading = false;
+    }
   }
 };
 
