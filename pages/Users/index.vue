@@ -107,12 +107,12 @@
                 <a-button type="text" size="small" :icon="h(EditOutlined)" @click="showEditModal(record)"
                   class="action-btn edit-btn" />
               </a-tooltip>
-              <a-tooltip title="Delete User">
+              <!-- <a-tooltip title="Delete User">
                 <a-popconfirm title="Are you sure you want to delete this user?" ok-text="Yes" cancel-text="No"
                   @confirm="deleteUser(record.id)" placement="topRight">
                   <a-button type="text" size="small" danger :icon="h(DeleteOutlined)" class="action-btn delete-btn" />
                 </a-popconfirm>
-              </a-tooltip>
+              </a-tooltip> -->
             </div>
           </template>
         </template>
@@ -158,9 +158,9 @@
                 {{ formData.is_active ? 'Active' : 'Inactive' }}
               </span>
               <!-- Debug info (remove in production) -->
-              <small class="debug-info">
+              <!-- <small class="debug-info">
                 Form Value: {{ formData.is_active }} ({{ typeof formData.is_active }})
-              </small>
+              </small> -->
             </div>
           </a-form-item>
         </div>

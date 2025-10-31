@@ -137,12 +137,15 @@
           </template>
           <template v-else-if="column.key === 'final_price'">
             <a-statistic
-              :value="parseFloat(record.total)"
+              :value="parseFloat(record.total_price)"
               :precision="2"
               prefix="$"
               :value-style="{ fontSize: '14px' }"
             />
           </template>
+          <prev>
+            <!-- {{ column.key }} -->
+          </prev>
         </template>
       </a-table>
     </a-card>
@@ -165,8 +168,8 @@ interface DetailedItem {
   color_name: string
   size_name: string
   quantity: number
-  price: string
-  total: string
+  final_price: string
+  total_price: string
   customer_id: string
 }
 
@@ -231,7 +234,7 @@ const uniqueSizes = computed(() =>
 const priceBounds = computed(() => {
   if (items.value.length === 0) return { min: 0, max: 1000 }
   
-  const prices = items.value.map(item => parseFloat(item.total))
+  const prices = items.value.map(item => parseFloat(item.total_price))
   return {
     min: Math.min(...prices),
     max: Math.max(...prices)
@@ -266,7 +269,7 @@ const filteredOrders = computed(() => {
     }
 
     // Price range filter
-    const price = parseFloat(item.total)
+    const price = parseFloat(item.total_price)
     if (price < filters.value.priceRange[0] || price > filters.value.priceRange[1]) {
       return false
     }
