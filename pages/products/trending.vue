@@ -285,7 +285,7 @@ interface TrendingItem {
   discount?: Discount;
 }
 
-interface Variant {
+export interface Variant {
   id: string;
   item_id: string;
   color_id: string;
